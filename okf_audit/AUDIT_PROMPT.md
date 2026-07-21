@@ -2,8 +2,8 @@
 
 You are auditing the knowledge base under `docs/` in this repository. Your job is to (1) bring it into conformance with the Open Knowledge Format (OKF v0.1), and (2) improve it as a living, agent-and-human-friendly knowledge base following the LLM-wiki pattern. Two reference files accompany this prompt:
 
-- `okf-audit/REFERENCE.md` — condensed OKF spec + LLM-wiki pattern. This is your source of truth for the rules. Read it fully before doing anything else.
-- `okf-audit/okf_lint.py` — a deterministic linter. Run it to find mechanical conformance issues; do not eyeball what the script can check.
+- `okf_audit/REFERENCE.md` — condensed OKF spec + LLM-wiki pattern. This is your source of truth for the rules. Read it fully before doing anything else.
+- `okf_audit/okf_lint.py` — a deterministic linter. Run it to find mechanical conformance issues; do not eyeball what the script can check.
 
 Work in the repo's existing conventions. This repo already uses OKF-style frontmatter with a house schema (e.g. `type`, `title`, `description`, `status`, `tags`, `updated`/`timestamp`, `related`). **Preserve the house schema** — conform to OKF *around* it, don't flatten it to the bare spec. OKF explicitly allows producer extension fields, so `status` and `related` stay.
 
@@ -19,13 +19,13 @@ Work in the repo's existing conventions. This repo already uses OKF-style frontm
 
 ## Phase 1 — Audit (read-only)
 
-Read `okf-audit/REFERENCE.md`, then run the linter:
+Read `okf_audit/REFERENCE.md`, then run the linter:
 
 ```bash
-python okf-audit/okf_lint.py docs/
+python okf_audit/okf_lint.py docs/
 ```
 
-Then read every file under `docs/` and assess it against both the OKF rules and the LLM-wiki quality bar. Produce a report at `okf-audit/AUDIT_REPORT.md` with these sections:
+Then read every file under `docs/` and assess it against both the OKF rules and the LLM-wiki quality bar. Produce a report at `okf_audit/AUDIT_REPORT.md` with these sections:
 
 - **Summary** — doc count, how many are conformant, top 3 problems.
 - **Conformance issues (mechanical)** — the linter's findings, plus anything it can't catch (e.g. a `type` that exists but is meaningless). Table: file · issue · severity · fix.
@@ -50,7 +50,7 @@ Apply changes in this order, committing after each group, re-running the linter 
 
 ## Definition of done
 
-- `python okf-audit/okf_lint.py docs/` reports no errors (warnings may remain if deliberately accepted — note which in the log).
+- `python okf_audit/okf_lint.py docs/` reports no errors (warnings may remain if deliberately accepted — note which in the log).
 - Every concept doc has a meaningful `type` and a `description`; house schema applied uniformly.
 - Root `index.md` lists every concept; `log.md` exists with an entry for this audit; subdirectories with multiple concepts are indexed.
 - No orphan concepts except ones explicitly justified in the report.
