@@ -1,0 +1,8 @@
+# Editor/tooling
+.obsidian/
+.vscode/
+.idea/
+.DS_Store
+
+# Env
+.env
