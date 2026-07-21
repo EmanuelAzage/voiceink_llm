@@ -4,13 +4,19 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-21T20:10:00Z
+timestamp: 2026-07-21T21:00:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-21 — `@/*` -> `src/*` absolute-import alias (single alias, not per-folder)
+`babel-plugin-module-resolver` + matching `tsconfig.json` paths. Considered per-folder aliases (`@screens`, `@components`, `@state`, ...) vs. one `@/*` root alias. Picked the single alias: less config to keep in sync as `src/` grows, and the folder segment in the import path (`@/screens/HomeScreen`) already carries the same information a per-folder alias would. Also added `@modules/*` -> `modules/*` since the Turbo Module lives outside `src/` (see [architecture.md](architecture.md) project structure) — it'll matter once M2 screens import `useTranscription()`.
+
+## 2026-07-21 — `react-native-mmkv` v4's Nitro Modules API, and mocking it for Jest
+Installed `react-native-mmkv` per the existing MMKV decision below, but v4 replaced the old `new MMKV()` class with a `createMMKV()` factory built on **Nitro Modules** (margelo's own JSI codegen layer, distinct from RN's TurboModules — see [rn-learning-notes.md](rn-learning-notes.md)). Consequences: (1) `react-native-nitro-modules` is a peerDependency npm doesn't auto-install and CocoaPods autolinking needs present to find the `NitroModules` podspec — added it explicitly. (2) No native binding exists under Jest, so `src/services/storage.ts`'s `createMMKV()` call throws in tests; mocked via a root `__mocks__/react-native-mmkv.ts` that re-exports the library's own `createMockMMKV()` (an in-memory `Map`-backed stand-in it ships for exactly this purpose). Jest auto-applies root-level `__mocks__` overrides for node_modules packages with no per-test `jest.mock()` needed.
 
 ## 2026-07-21 — CocoaPods for iOS dependencies (for now)
 Coming from native/Skip development, SPM would be the natural choice — but React Native's build orchestration and third-party autolinking are still built on CocoaPods, so the CLI template's Podfile is the paved road. Notable context: RN is actively migrating to SPM (RN 0.84 shipped precompiled iOS binaries by default to decouple the core from CocoaPods; an official RFC covers full SPM replacement including autolinking), and the CocoaPods trunk goes read-only on 2026-12-02. Decision: use CocoaPods for this build; the toolchain fight isn't the learning objective. Revisit if RN ships stable SPM autolinking.

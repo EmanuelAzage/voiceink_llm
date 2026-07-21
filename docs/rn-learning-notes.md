@@ -4,7 +4,7 @@ title: React Native Learning Notes
 description: Living doc of RN internals to understand while building — seeded with topics, filled in with notes as they come up in practice
 status: living
 tags: [learning, react-native, internals]
-timestamp: 2026-07-21T21:20:00Z
+timestamp: 2026-07-21T22:00:00Z
 related: [native-module-transcription.md, architecture.md]
 ---
 
@@ -59,6 +59,26 @@ RN still orchestrates iOS native deps via **CocoaPods** (the `Podfile` + `pod in
 
 ## Ecosystem fluency (screen-conversation level)
 Expo vs bare workflow tradeoffs · React Navigation patterns · state library landscape (Zustand/Redux/Jotai) · MMKV vs AsyncStorage · how OTA updates (CodePush-style) relate to store releases · testing story (Jest, React Native Testing Library, Detox).
+
+## Nitro Modules — a second JSI layer, sitting next to TurboModules
+
+Learned this the hard way: `react-native-mmkv` v4 replaced its old `new MMKV()` class with `createMMKV()`, and importing it crashed with *"Failed to get NitroModules: the native Turbo/Native-Module could not be found."* Nitro Modules is a JSI-based native-module framework built by Margelo (the MMKV/Vision Camera/Reanimated-adjacent team) — not part of React Native core, but built *on the same JSI primitive* TurboModules use. Where TurboModules are RN's own codegen path (spec `.ts` → `TurboModuleRegistry`), Nitro is an independent codegen path some third-party library authors chose instead, reportedly for tighter Swift/Kotlin type bridging and less boilerplate than authoring a TurboModule spec by hand. Practically: it ships as its own npm peerDependency (`react-native-nitro-modules`) that provides one shared native module every Nitro-based library's JS registers against — MMKV's Nitro binding failed until that peer dep was installed and pods were re-run.
+
+**Native-dev analogy:** JSI is the C-ABI-equivalent substrate; TurboModules and Nitro Modules are two different codegen toolchains built on top of it — like two ORMs both compiling down to the same SQL wire protocol. Knowing JSI exists doesn't tell you which codegen a given library picked; you find out from the library's own docs (or, as here, from the runtime error).
+
+## Metro's babel pipeline and its cache
+
+Added `babel-plugin-module-resolver` for `@/*` absolute imports, but the running Metro dev server kept failing to resolve them — until I killed it and restarted with `--reset-cache`. Reason: Metro transforms each file through your `babel.config.js` (which is where the resolver plugin rewrites `@/foo` → the real relative path) as part of building its dependency graph, then *caches* that transform output keyed by file content — but a `babel.config.js` edit isn't part of that cache key by default in a long-running dev server process, so a server started before the config changed keeps serving pre-alias transforms.
+
+**Native-dev analogy:** this is the RN-bundler equivalent of Xcode's derived-data staleness — a build-system cache invalidated by inputs it doesn't fully track. `--reset-cache` here is the same move as nuking DerivedData.
+
+## Typed navigation via global declaration merging
+
+React Navigation v7's idiomatic pattern for typed routes: define a `RootStackParamList` type, then merge it into a global `ReactNavigation.RootParamList` interface (`declare global { namespace ReactNavigation { interface RootParamList extends RootStackParamList {} } }` in `src/navigation/types.ts`). This makes every navigation hook (`useNavigation()`, `NativeStackScreenProps`, etc.) app-wide type-safe without threading a generic through every call site — TypeScript's declaration merging fills in the library's otherwise-generic `RootParamList` with this app's concrete route list, project-wide, from one file.
+
+## CocoaPods writes build settings into the pbxproj — and is telling you it's leaving
+
+Running `pod install` auto-edits `ios/*.xcodeproj/project.pbxproj` and `Info.plist` directly — e.g. it wrote `RCT_REMOVE_LEGACY_ARCH=1` / `USE_HERMES=true` build flags and an `RCTNewArchEnabled` plist key as part of integrating the generated pods. This is normal (every RN iOS project's pbxproj carries CocoaPods-injected settings; they're meant to be committed) — but `pod install` now also prints a live deprecation notice pointing at `yarn ios`/`expo run:ios` instead, which is the RN team's migration-in-progress away from CocoaPods orchestration mentioned in [decisions.md](decisions.md)'s CocoaPods entry — seeing it fire on a plain `pod install` in mid-2026 is a concrete, dated data point for that migration's timeline, not just the announcement blog post.
 
 ## Interview bridges (own-experience mapping)
 - Shared TS contract + Swift/Kotlin implementations ↔ shared-interface/native-implementation pattern from prior cross-platform work.

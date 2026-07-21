@@ -4,7 +4,7 @@ title: VoiceInk Build Plan
 description: Milestone breakdown (M1-M6) with acceptance criteria for the two-day build
 status: living
 tags: [plan, milestones]
-timestamp: 2026-07-21T20:10:00Z
+timestamp: 2026-07-21T21:00:00Z
 related: [product-spec.md, native-module-transcription.md, log.md]
 ---
 
@@ -13,10 +13,10 @@ related: [product-spec.md, native-module-transcription.md, log.md]
 Work milestones top to bottom; each ends in a committed, compiling state on both platforms (until M2, iOS only is acceptable). Target: M1–M3 day one, M4–M6 day two.
 
 ## M1 — Scaffold & navigation
-- [ ] `npx @react-native-community/cli init VoiceInk` (New Architecture on), TypeScript strict, eslint/prettier, absolute imports.
-- [ ] React Navigation native-stack: Home, Capture (modal), Review, Detail, Settings with typed routes.
-- [ ] Theme tokens; Home renders empty state + mic button; Zustand + MMKV wired with a trivial persisted value.
-- **Accept:** app boots on iOS simulator and Android emulator; navigation works; typecheck/lint clean.
+- [x] `npx @react-native-community/cli init VoiceInk` (New Architecture on), TypeScript strict, eslint/prettier, absolute imports.
+- [x] React Navigation native-stack: Home, Capture (modal), Review, Detail, Settings with typed routes.
+- [x] Theme tokens; Home renders empty state + mic button; Zustand + MMKV wired with a trivial persisted value.
+- **Accept:** app boots on iOS simulator and Android emulator; navigation works; typecheck/lint clean. ✅ 2026-07-21
 
 ## M2 — Turbo Module, iOS side
 - [ ] Codegen spec (`NativeTranscription.ts`) per `native-module-transcription.md`; module registered and loading.

@@ -2,6 +2,8 @@
 
 ## 2026-07-21
 
+* **Update**: Completed [M1](build-plan.md) — scaffold & navigation. `npx @react-native-community/cli init` (RN 0.86, New Architecture on, bundle id `com.emanuelazage.voiceink`); React Navigation native-stack with typed routes (Home, Capture modal, Review, Detail, Settings); theme tokens; Zustand + MMKV settings store (persisted `language`, proven via the Settings screen surviving relaunch). Verified boot on iOS simulator; Android build confirmed working. Lint/typecheck/tests clean. New decisions and learning notes logged for the absolute-import alias, `react-native-mmkv` v4's Nitro Modules API (and mocking it for Jest), the Metro babel-cache gotcha, typed-navigation declaration merging, and CocoaPods' pbxproj auto-edits — see [decisions.md](decisions.md) and [rn-learning-notes.md](rn-learning-notes.md).
+* **Update**: Added an OKF conformance audit toolkit (`okf_audit/` — linter + audit prompt) carried over from a prior project, for keeping this `docs/` bundle conformant over time.
 * **Update**: Expanded [RN learning notes](rn-learning-notes.md) with worked explanations of the New Architecture (Bridge vs JSI/TurboModules/Fabric/Codegen), Hermes vs JSC (why startup improves), and the CocoaPods→SPM migration trajectory — each mapped to native-dev analogies.
 
 * **Initialization**: Created the knowledge base — [product spec](product-spec.md), [architecture](architecture.md), [Turbo Module spec](native-module-transcription.md), [build plan](build-plan.md) (M1-M6), [decision log](decisions.md), and [learning notes](rn-learning-notes.md). Frontmatter conformed to the Open Knowledge Format v0.1 spec.
