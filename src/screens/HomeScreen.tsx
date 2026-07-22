@@ -17,9 +17,6 @@ export default function HomeScreen({ navigation }: Props) {
         <Text style={[typography.body, styles.subtitle, { color: colors.textMuted }]}>
           Hold the mic button and start talking — we'll turn it into a card.
         </Text>
-        <Pressable onPress={() => navigation.navigate('Settings')} style={{ marginTop: spacing.md }}>
-          <Text style={{ color: colors.primary }}>Settings</Text>
-        </Pressable>
       </View>
       <View style={[styles.footer, { paddingBottom: spacing.xxl }]}>
         <Text style={[typography.caption, { color: colors.textMuted, marginBottom: spacing.md }]}>
