@@ -4,7 +4,7 @@ title: React Native Learning Notes
 description: Living doc of RN internals to understand while building — seeded with topics, filled in with notes as they come up in practice
 status: living
 tags: [learning, react-native, internals]
-timestamp: 2026-07-21T22:00:00Z
+timestamp: 2026-07-22T09:00:00Z
 related: [native-module-transcription.md, architecture.md]
 ---
 
@@ -62,9 +62,46 @@ Expo vs bare workflow tradeoffs · React Navigation patterns · state library la
 
 ## Nitro Modules — a second JSI layer, sitting next to TurboModules
 
-Learned this the hard way: `react-native-mmkv` v4 replaced its old `new MMKV()` class with `createMMKV()`, and importing it crashed with *"Failed to get NitroModules: the native Turbo/Native-Module could not be found."* Nitro Modules is a JSI-based native-module framework built by Margelo (the MMKV/Vision Camera/Reanimated-adjacent team) — not part of React Native core, but built *on the same JSI primitive* TurboModules use. Where TurboModules are RN's own codegen path (spec `.ts` → `TurboModuleRegistry`), Nitro is an independent codegen path some third-party library authors chose instead, reportedly for tighter Swift/Kotlin type bridging and less boilerplate than authoring a TurboModule spec by hand. Practically: it ships as its own npm peerDependency (`react-native-nitro-modules`) that provides one shared native module every Nitro-based library's JS registers against — MMKV's Nitro binding failed until that peer dep was installed and pods were re-run.
+Learned this the hard way: `react-native-mmkv` v4 replaced its old `new MMKV()` class with `createMMKV()`, and importing it crashed with *"Failed to get NitroModules: the native Turbo/Native-Module could not be found."* Nitro Modules is a JSI-based native-module framework built by Margelo (the MMKV/Vision Camera/Reanimated-adjacent team) — not part of React Native core, but built *on the same JSI primitive* TurboModules use (JSI = JS holding a direct, synchronous, in-process reference to a native C++ object — think `@objc` bridging without the Bridge's serialization). TurboModules and Nitro are **sibling codegen systems targeting the same JSI foundation**, not one built on the other.
+
+**Where they differ, concretely:**
+- **TurboModules** (RN core): spec a `.ts extends TurboModule` interface; RN's own Codegen generates Objective-C++ (iOS) / Java (Android) binding boilerplate you conform to. `TranscriptionProvider` (`modules/transcription/`) is one of these — the M2/M3 work will show the generated glue directly.
+- **Nitro** (third-party): spec a `.nitro.ts` "HybridObject" interface (seen directly in `node_modules/react-native-mmkv/src/specs/MMKV.nitro.ts`); Nitro's own codegen ("Nitrogen") generates **pure Swift and pure Kotlin** conformances — no hand-written Objective-C++/JNI required, which is a real ergonomics win over TurboModules' current authoring experience.
+
+**The detail that makes the relationship click:** Nitro doesn't sidestep TurboModules — it bootstraps itself through *exactly one* real TurboModule, named `"NitroModules"`. That's what our actual crash showed:
+```
+at Object.getEnforcing (node_modules/react-native/Libraries/TurboModule/TurboModuleRegistry.js:28:26)
+at Object.getEnforcing (node_modules/react-native-nitro-modules/src/turbomodule/NativeNitroModules.ts:37:39)
+```
+`react-native-nitro-modules` calls RN's own `TurboModuleRegistry.getEnforcing('NitroModules')` for one bootstrap module; every Nitro-based library (MMKV included) then rides on top of that single module via Nitro's own runtime, rather than each library registering its own TurboModule. Swift analogy: a plugin framework that installs itself as exactly one `@objc` bridge class, and every plugin built "on" the framework routes through that one class instead of writing its own bridge.
+
+**Benefits (why a library author picks Nitro):** no ObjC++/JNI boilerplate, idiomatic Swift/Kotlin bindings; claimed better performance on high-frequency calls (more direct type marshalling than TurboModules' current codegen); "HybridObjects" let native object references pass between JS calls, not just primitives — plausible wins for something called as often as MMKV's `getString`/`setString`.
+
+**Disadvantages (what we actually paid for it):**
+- Extra install surface: `react-native-nitro-modules` is a `peerDependency` npm doesn't auto-install, and CocoaPods autolinking needs it *present* to find the `NitroModules` podspec — we hit both failure modes back to back (Jest crash, then `pod install` erroring "Unable to find a specification for NitroModules").
+- Decoupled from RN's release train: TurboModules ship in lockstep with React Native itself; Nitro is an independent project whose New-Architecture compatibility and maintenance depend on a separate team's priorities.
+- Ecosystem fragmentation: two parallel native-module systems now live in this project's dependency tree, not one.
+- API churn risk lands on consumers: MMKV v4's `new MMKV()` → `createMMKV()` break was a direct consequence of moving onto Nitro's HybridObject pattern — my first draft of `storage.ts` used the old (memorized, now-wrong) API, and it surfaced as a Jest crash before `tsc` ever caught it, since I hadn't rerun typecheck yet at that point.
 
 **Native-dev analogy:** JSI is the C-ABI-equivalent substrate; TurboModules and Nitro Modules are two different codegen toolchains built on top of it — like two ORMs both compiling down to the same SQL wire protocol. Knowing JSI exists doesn't tell you which codegen a given library picked; you find out from the library's own docs (or, as here, from the runtime error).
+
+## `setOptions` + `useLayoutEffect` for dynamic headers, and `Pressable`
+
+React Navigation's header is normally *declarative* — static `options` on `<Stack.Screen>` in the navigator (that's what screen titles use here: `options={{ title: 'VoiceInk' }}`). When a screen needs to inject something dynamic into its own header — say, a button whose `onPress` needs a value only the screen component has — the escape hatch is `navigation.setOptions()`, called imperatively from inside the screen.
+
+I first wrote a Settings-button-in-the-header this way:
+```tsx
+useLayoutEffect(() => {
+  navigation.setOptions({
+    headerRight: () => <Pressable onPress={...}><Text>Settings</Text></Pressable>,
+  });
+}, [navigation]);
+```
+**Why `useLayoutEffect`, not `useEffect`:** a real React Navigation recommendation, not style. `useEffect` runs *after* paint — asynchronously, next tick — so with `setOptions` in a `useEffect`, the screen would render with the default header first, paint it, then patch in the custom header a moment later: a visible flicker. `useLayoutEffect` runs synchronously right after React commits host-tree changes but *before* anything is presented on screen, so the header is correct from the first frame. UIKit analogy: setting `navigationItem.rightBarButtonItem` in `viewWillAppear` (before the view is shown) vs. `viewDidAppear` (after — a visible late pop-in).
+
+**Why it got removed:** ESLint's `react/no-unstable-nested-components` (from `@react-native/eslint-config`) flagged the inline `headerRight: () => (...)` arrow function — the rule exists because defining a component inline inside a render body gives it a fresh identity every render, which (when that pattern renders actual JSX in the tree across re-renders) makes React's reconciler treat it as a new component type each time and tear down/remount the subtree. Extracting a named `HeaderSettingsButton` component fixed the button's own identity but the rule still flagged the *outer* callback — arguably a false positive here, since `headerRight` is a render-prop the navigator calls imperatively, not a JSX element React's reconciler diffs directly. Rather than fight the lint rule (`useCallback`, a disable-comment), the simpler fix was to not use the header at all: the Settings link became plain JSX in `HomeScreen`'s own `return`, no effect, no timing to reason about.
+
+**`Pressable`:** a core RN component (`react-native` itself, not a dependency) — the modern general-purpose replacement for the older `TouchableOpacity`/`TouchableHighlight` family. Wraps arbitrary children, exposes `onPress`/`onPressIn`/`onPressOut`/`onLongPress`, a `style` that can be a function of press state (`({ pressed }) => ({...})`), `hitSlop`, and `android_ripple`. SwiftUI analogy: closest to `Button { action } label: { ... }` or `.onTapGesture { }` — an unstyled tap container where you own all the visuals. UIKit analogy: a view wrapped in `UITapGestureRecognizer`, or a bare `UIControl` with `.addTarget(_:action:for:.touchUpInside)` — `onPress` fires on the RN equivalent of `.touchUpInside`. RN ships a `<Button>` too, but it's closer to a stock system button with little styling control; `Pressable` is what you reach for whenever you want a custom-looking tappable element (used for both the Settings link and the mic button here).
 
 ## Metro's babel pipeline and its cache
 
