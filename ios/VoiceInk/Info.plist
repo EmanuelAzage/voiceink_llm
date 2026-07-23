@@ -35,6 +35,10 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>VoiceInk needs your microphone to record voice notes.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>VoiceInk uses speech recognition to turn your recording into a note.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

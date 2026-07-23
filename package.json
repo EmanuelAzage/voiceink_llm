@@ -45,5 +45,13 @@
   },
   "engines": {
     "node": ">= 22.11.0"
+  },
+  "codegenConfig": {
+    "name": "VoiceInkSpecs",
+    "type": "modules",
+    "jsSrcsDir": "modules/transcription",
+    "android": {
+      "javaPackageName": "com.emanuelazage.voiceink.specs"
+    }
   }
 }
