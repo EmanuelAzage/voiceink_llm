@@ -22,7 +22,7 @@ Work milestones top to bottom; each ends in a committed, compiling state on both
 - [x] Codegen spec (`NativeTranscription.ts`) per `native-module-transcription.md`; module registered and loading.
 - [x] Swift implementation: permissions, start/stop/cancel, partial events, 60s cap.
 - [x] Capture screen consumes `useTranscription()`: hold-to-record, live partial transcript, release → final transcript shown raw.
-- **Accept:** speak on iOS simulator/device → live partials stream → release yields final transcript ✅ 2026-07-22; permission-denied path shows correct UI — implemented, not yet manually verified (only the grant path has been exercised).
+- **Accept:** speak on iOS simulator/device → live partials stream → release yields final transcript ✅ 2026-07-22; permission-denied path shows correct UI ✅ 2026-07-23 (verified for both speech-recognition and microphone denial, via fresh installs to reset privacy grants).
 
 ## M3 — Turbo Module, Android side
 - [ ] Kotlin implementation incl. OEM auto-end quirk handling and `<queries>` manifest entry.

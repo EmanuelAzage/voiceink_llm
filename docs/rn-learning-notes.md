@@ -4,7 +4,7 @@ title: React Native Learning Notes
 description: Living doc of RN internals to understand while building — seeded with topics, filled in with notes as they come up in practice
 status: living
 tags: [learning, react-native, internals]
-timestamp: 2026-07-23T09:00:00Z
+timestamp: 2026-07-23T10:00:00Z
 related: [native-module-transcription.md, architecture.md]
 ---
 
@@ -194,6 +194,8 @@ Wiring `TranscriptionProvider` was the hardest part of the build so far — seve
 **The methodology lesson, independent of RN specifics:** first hypothesis (stale build/process, informed by a real Metro-cache issue from M1) was a reasonable guess but wrong, and cost real time before being ruled out empirically (via `strings` on the actual compiled binary). Once local source-reading and empirical native-side checks stopped converging, the productive move was searching current official/community documentation rather than continuing to guess from source alone — bridgeless mode changed enough of the picture that the answer wasn't fully re-derivable from first principles in reasonable time. Verify → exhaust local reasoning → consult authoritative docs, in that order.
 
 **Native-dev framing for the whole saga:** the closest analogy is a class that correctly conforms to a protocol and is discoverable via reflection, but a framework's factory method still requires an explicit `+ (id)createInstance` override before it'll actually use that conformance — conformance alone was never a promise of construction.
+
+**8. `Linking.openSettings()` deep-links unreliably on the iOS Simulator — not an app bug.** Verified the permission-denied UI end to end (both mic and speech-recognition denial, each requiring a fresh install to reset the privacy grant since `xcrun simctl privacy reset` errored with "Operation not permitted" in this environment — full uninstall+reinstall was the reliable way to force iOS to re-prompt). The denial screen and its "Open Settings" link both worked correctly — `Linking.openSettings()` calls the standard `UIApplicationOpenSettingsURLString` API. But on Simulator it lands on a generic, empty "Apps" list rather than jumping straight to VoiceInk's own settings page, requiring a manual search — a long-standing Simulator-only limitation; the same call reliably deep-links directly to the app's settings page on a real device. Worth remembering next time a "broken" settings link shows up in Simulator testing: check whether it's real before touching app code.
 
 ## Interview bridges (own-experience mapping)
 - Shared TS contract + Swift/Kotlin implementations ↔ shared-interface/native-implementation pattern from prior cross-platform work.

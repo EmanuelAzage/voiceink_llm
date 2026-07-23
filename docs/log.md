@@ -1,5 +1,9 @@
 # VoiceInk Update Log
 
+## 2026-07-23
+
+* **Update**: M2's permission-denied path fully verified — both microphone and speech-recognition denial exercised (fresh installs to reset privacy grants, since `xcrun simctl privacy reset` wasn't cooperating in this environment), correct fallback UI confirmed both times. M2 is now fully closed. Noted a Simulator-only quirk in [rn-learning-notes.md](rn-learning-notes.md): `Linking.openSettings()` deep-links unreliably in Simulator (lands on a generic empty Apps list) despite being the correct, standard call — works properly on real devices.
+
 ## 2026-07-22
 
 * **Update**: Completed [M2](build-plan.md) — Turbo Module, iOS side. `TranscriptionProvider` implemented in Swift (`SFSpeechRecognizer` + `AVAudioEngine`, permissions, start/stop/cancel, partial-result and audio-level events, 60s cap) behind the Codegen spec; Capture screen wired to `useTranscription()` with hold-to-record, live partial transcript, and raw final transcript display. Verified end-to-end: live speech → streaming partials → final transcript on release. Permission-grant path confirmed; permission-denied UI implemented but not yet manually re-verified.
