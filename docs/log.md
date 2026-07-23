@@ -1,5 +1,10 @@
 # VoiceInk Update Log
 
+## 2026-07-22
+
+* **Update**: Completed [M2](build-plan.md) — Turbo Module, iOS side. `TranscriptionProvider` implemented in Swift (`SFSpeechRecognizer` + `AVAudioEngine`, permissions, start/stop/cancel, partial-result and audio-level events, 60s cap) behind the Codegen spec; Capture screen wired to `useTranscription()` with hold-to-record, live partial transcript, and raw final transcript display. Verified end-to-end: live speech → streaming partials → final transcript on release. Permission-grant path confirmed; permission-denied UI implemented but not yet manually re-verified.
+* **Update**: Registering the local Turbo Module was the hardest problem so far — several wrong turns (a stale-build hypothesis that cost time before being ruled out empirically) before finding the real cause: `RCTTurboModuleManager` requires a class to implement `getTurboModule:` returning the Codegen-generated `SpecJSI` wrapper, not merely conform to the spec protocol and be discoverable by name. Full writeup, including the Objective-C++ bridging pattern for Swift modules and the bridgeless-mode `nativeModuleProxy` detail, in [rn-learning-notes.md](rn-learning-notes.md).
+
 ## 2026-07-21
 
 * **Update**: Completed [M1](build-plan.md) — scaffold & navigation. `npx @react-native-community/cli init` (RN 0.86, New Architecture on, bundle id `com.emanuelazage.voiceink`); React Navigation native-stack with typed routes (Home, Capture modal, Review, Detail, Settings); theme tokens; Zustand + MMKV settings store (persisted `language`, proven via the Settings screen surviving relaunch). Verified boot on iOS simulator; Android build confirmed working. Lint/typecheck/tests clean. New decisions and learning notes logged for the absolute-import alias, `react-native-mmkv` v4's Nitro Modules API (and mocking it for Jest), the Metro babel-cache gotcha, typed-navigation declaration merging, and CocoaPods' pbxproj auto-edits — see [decisions.md](decisions.md) and [rn-learning-notes.md](rn-learning-notes.md).

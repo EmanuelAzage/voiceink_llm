@@ -4,7 +4,7 @@ title: React Native Learning Notes
 description: Living doc of RN internals to understand while building — seeded with topics, filled in with notes as they come up in practice
 status: living
 tags: [learning, react-native, internals]
-timestamp: 2026-07-22T11:00:00Z
+timestamp: 2026-07-23T09:00:00Z
 related: [native-module-transcription.md, architecture.md]
 ---
 
@@ -165,6 +165,35 @@ Same "separate, optional tool" shape applies to linting: `tsc` only checks types
 ## CocoaPods writes build settings into the pbxproj — and is telling you it's leaving
 
 Running `pod install` auto-edits `ios/*.xcodeproj/project.pbxproj` and `Info.plist` directly — e.g. it wrote `RCT_REMOVE_LEGACY_ARCH=1` / `USE_HERMES=true` build flags and an `RCTNewArchEnabled` plist key as part of integrating the generated pods. This is normal (every RN iOS project's pbxproj carries CocoaPods-injected settings; they're meant to be committed) — but `pod install` now also prints a live deprecation notice pointing at `yarn ios`/`expo run:ios` instead, which is the RN team's migration-in-progress away from CocoaPods orchestration mentioned in [decisions.md](decisions.md)'s CocoaPods entry — seeing it fire on a plain `pod install` in mid-2026 is a concrete, dated data point for that migration's timeline, not just the announcement blog post.
+
+## M2: getting a local Swift Turbo Module actually registered (the real war story)
+
+Wiring `TranscriptionProvider` was the hardest part of the build so far — several genuine dead ends before the real fix. Worth a full writeup since the failure modes are non-obvious and the fixes are durable patterns, not one-offs.
+
+**1. Swift can't `import` a Codegen header that requires C++ context.** `VoiceInkSpecs.h` (and any other spec sharing the `ReactCodegen` module — here, MMKV's Nitro spec) is guarded with `#ifndef __cplusplus #error ... #endif`, so the whole header — including the plain Objective-C protocol declaration in it — can only be parsed in Objective-C++. `import ReactCodegen` from Swift tries to build that whole Clang module consistently and fails outright if *any* header inside it needs C++. Fix, and the durable pattern: keep the real implementation in Swift, and add a thin Objective-C++ file (`TranscriptionBridge.mm`) that declares protocol conformance as a **category** on the Swift class — Objective-C doesn't require a method's implementation and its conformance declaration to live in the same file, so this works cleanly. Any Swift Turbo Module whose Codegen output shares a module with another spec needing C++ will hit this.
+
+**2. Don't import the whole `<Target>-Swift.h` umbrella from a bridge file just to see one class.** First version of the `.mm` file imported `VoiceInk-Swift.h` (the auto-generated header exposing every `@objc` Swift declaration in the target) just to make `Transcription` visible — that dragged in `AppDelegate.swift`'s declarations too and their unrelated framework requirements, breaking the build. Fix: forward-declare just the one class's shape directly (`@interface Transcription : RCTEventEmitter @end`) — Objective-C class interfaces only need to be *consistent* across translation units, not all sourced from one header. This is exactly the same technique `RCT_EXTERN_MODULE` itself uses for pure-Swift modules.
+
+**3. This RN template's Xcode project doesn't auto-discover new files.** It uses the classic explicit `PBXFileReference`/`PBXBuildFile` project format (not the newer file-system-synchronized-groups format some templates use) — a new `.swift`/`.mm` file sitting on disk isn't part of any build phase until it's explicitly added. Used the `xcodeproj` Ruby gem (already present via CocoaPods' own tooling — `bundle exec ruby` in `ios/`) to add file references programmatically; got the relative path wrong on the first pass (added at `ios/Transcription.swift` instead of `ios/VoiceInk/Transcription.swift` — the existing group's own path is `nil`, so file paths are relative to the *project root*, not the group), producing a clear "Build input file cannot be found" error that made the fix obvious.
+
+**4. `console.log` doesn't route to native syslog in Hermes dev builds.** Assumed I could add a JS diagnostic and read it via `xcrun simctl log show` — nothing showed up. `console.log` goes to Metro's own terminal (or an attached debugger) over a separate channel, not through `NSLog`/`os_log` the way some older RN setups routed it. Workaround when you don't control the terminal it's going to: embed the diagnostic in a **thrown Error** instead — LogBox displays it on-device, readable and copyable directly.
+
+**5. Bridgeless mode changes which native module proxy exists.** `TurboModuleRegistry.js` checks `global.__turboModuleProxy` first — but that's **only installed in non-bridgeless mode**. In bridgeless mode (confirmed via a diagnostic: `isBridgeless: true`), `TurboModuleBinding::install()` instead installs `global.nativeModuleProxy`, a JSI `HostObject`, and `NativeModules.js` does `if (global.nativeModuleProxy) { NativeModules = global.nativeModuleProxy }` — so `TurboModuleRegistry`'s fallback path (`NativeModules[name]`) is actually the *primary* live path under bridgeless, not a legacy fallback. RN 0.86's `RCTReactNativeFactory`/`startReactNative` bootstrap (what this app's `AppDelegate.swift` uses) is bridgeless by default.
+
+**6. The actual root cause: conforming to the Spec protocol and being discoverable by name is *not* sufficient.** Verified empirically (via an `NSLog` in `+load`) that the class registered, conformed to `NativeTranscriptionSpec` and `RCTTurboModule`, and was correctly found by `NSClassFromString` — every check passed, yet `TurboModuleRegistry.getEnforcing` still failed. The real cause, found in `RCTTurboModuleManager.mm`'s `_createAndSetUpObjCModule:` and confirmed against the [official New Architecture Turbo Modules guide](https://github.com/reactwg/react-native-new-architecture/blob/main/docs/turbo-modules.md): after resolving and instantiating the class, the manager checks `[module respondsToSelector:@selector(getTurboModule:)]` — **if false, it returns `nullptr` unconditionally, with no fallback**. A module must implement `getTurboModule:`, returning the Codegen-generated `NativeTranscriptionSpecJSI` (the same `SpecJSI`/`SpecBase` scaffolding I'd initially dismissed as vestigial when first reading the generated header — it isn't). The actual fix, three lines in `TranscriptionBridge.mm`:
+```objc
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params
+{
+  return std::make_shared<facebook::react::NativeTranscriptionSpecJSI>(params);
+}
+```
+
+**7. `startObserving`/`stopObserving` prevent the "no listeners" warning, and it's not cosmetic-only.** `RCTEventEmitter.sendEvent(withName:body:)` warns when called before any JS listener has round-tripped through `addListener()` — genuinely possible here since the audio tap can fire its first buffer before that round trip completes. Fix: override `startObserving()`/`stopObserving()` (called on first-listener-added / last-listener-removed) to track a `hasListeners` flag, and guard every `sendEvent` call site with it. Purpose-built hooks for exactly this, not a workaround.
+
+**The methodology lesson, independent of RN specifics:** first hypothesis (stale build/process, informed by a real Metro-cache issue from M1) was a reasonable guess but wrong, and cost real time before being ruled out empirically (via `strings` on the actual compiled binary). Once local source-reading and empirical native-side checks stopped converging, the productive move was searching current official/community documentation rather than continuing to guess from source alone — bridgeless mode changed enough of the picture that the answer wasn't fully re-derivable from first principles in reasonable time. Verify → exhaust local reasoning → consult authoritative docs, in that order.
+
+**Native-dev framing for the whole saga:** the closest analogy is a class that correctly conforms to a protocol and is discoverable via reflection, but a framework's factory method still requires an explicit `+ (id)createInstance` override before it'll actually use that conformance — conformance alone was never a promise of construction.
 
 ## Interview bridges (own-experience mapping)
 - Shared TS contract + Swift/Kotlin implementations ↔ shared-interface/native-implementation pattern from prior cross-platform work.
