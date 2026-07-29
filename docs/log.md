@@ -1,5 +1,9 @@
 # VoiceInk Update Log
 
+## 2026-07-29
+
+* **Update**: Completed the Kotlin side of [M3](build-plan.md) — `TranscriptionProvider`'s Android implementation (`SpeechRecognizer` + `RecognitionListener`, `RECORD_AUDIO` permission via `PermissionAwareActivity`, the `<queries>` package-visibility manifest entry, on-device-recognition preference on API 31+, the OEM auto-end quirk cached the same way as iOS's). Registered via `TranscriptionModule extends NativeTranscriptionSpec` + `TranscriptionPackage extends BaseReactPackage`, added manually to `MainApplication.kt`. Verified end-to-end on a real Samsung SM-X230 tablet via USB (live partial transcript + final transcript on release, no errors in logcat). Parity checklist partially passes; permission-denied and airplane-mode/cancel checks still outstanding on Android. Full writeup, including the Codegen-output comparison against iOS and the platform asymmetries found, in [rn-learning-notes.md](rn-learning-notes.md).
+
 ## 2026-07-23
 
 * **Update**: M2's permission-denied path fully verified — both microphone and speech-recognition denial exercised (fresh installs to reset privacy grants, since `xcrun simctl privacy reset` wasn't cooperating in this environment), correct fallback UI confirmed both times. M2 is now fully closed. Noted a Simulator-only quirk in [rn-learning-notes.md](rn-learning-notes.md): `Linking.openSettings()` deep-links unreliably in Simulator (lands on a generic empty Apps list) despite being the correct, standard call — works properly on real devices.

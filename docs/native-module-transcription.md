@@ -4,7 +4,7 @@ title: TranscriptionProvider Turbo Module Spec
 description: TypeScript contract, Swift and Kotlin implementation notes, permissions, and error codes for the native speech-recognition module
 status: living
 tags: [native-module, turbo-module, speech, ios, android]
-timestamp: 2026-07-21T20:10:00Z
+timestamp: 2026-07-29T17:00:00Z
 related: [architecture.md, build-plan.md]
 ---
 
@@ -64,3 +64,10 @@ Events emitted (via `NativeEventEmitter`): `onPartialTranscript { text }`, `onEr
 ## Parity checklist (used in M3)
 
 Same script spoken on both platforms must produce: partial events streaming, final transcript on stop, correct error codes for denied permission and airplane-mode server-recognizer failure, no mic left open after cancel (verify with OS mic indicator).
+
+Status as of 2026-07-29:
+- [x] Partial events streaming — iOS simulator + Android device (Samsung SM-X230).
+- [x] Final transcript on stop — iOS simulator + Android device.
+- [x] Correct error code, denied permission — iOS (both mic and speech-recognition denial verified). Android not yet exercised (only the grant path has been tested).
+- [ ] Correct error code, airplane-mode server-recognizer failure — not yet tested on either platform.
+- [ ] No mic left open after `cancel()` — not yet tested on either platform; `cancel()` also isn't wired to a `CaptureScreen` UI affordance yet (only `start`/`stop` are, via press-in/press-out).

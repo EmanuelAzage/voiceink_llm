@@ -4,7 +4,7 @@ title: VoiceInk Build Plan
 description: Milestone breakdown (M1-M6) with acceptance criteria for the two-day build
 status: living
 tags: [plan, milestones]
-timestamp: 2026-07-21T21:00:00Z
+timestamp: 2026-07-29T17:00:00Z
 related: [product-spec.md, native-module-transcription.md, log.md]
 ---
 
@@ -25,9 +25,9 @@ Work milestones top to bottom; each ends in a committed, compiling state on both
 - **Accept:** speak on iOS simulator/device → live partials stream → release yields final transcript ✅ 2026-07-22; permission-denied path shows correct UI ✅ 2026-07-23 (verified for both speech-recognition and microphone denial, via fresh installs to reset privacy grants).
 
 ## M3 — Turbo Module, Android side
-- [ ] Kotlin implementation incl. OEM auto-end quirk handling and `<queries>` manifest entry.
+- [x] Kotlin implementation incl. OEM auto-end quirk handling and `<queries>` manifest entry.
 - [ ] Run parity checklist from the module spec on both platforms.
-- **Accept:** same capture flow works on Android emulator (with host mic) / device; parity checklist passes.
+- **Accept:** same capture flow works on Android device ✅ 2026-07-29 (real Samsung SM-X230 via USB); parity checklist partially passes — see [native-module-transcription.md](native-module-transcription.md)'s checklist for the itemized state.
 
 ## M4 — Extraction & Review
 - [ ] `cardSchema.ts` + `extraction.ts` (tool-use call, `additionalProperties: false`, timeout, one schema-retry, fallback path).
