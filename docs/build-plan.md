@@ -49,5 +49,5 @@ Work milestones top to bottom; each ends in a committed, compiling state on both
 
 ## Stretch (only if time remains)
 - Streaming the LLM response into the Review screen field-by-field.
-- Jest tests for `extraction.ts` schema handling; one native-module mock test.
+- [x] Jest tests for `cardSchema.ts`/`extraction.ts` schema handling; one native-module mock test. ✅ 2026-07-30 — see [decisions.md](decisions.md). Surfaced and fixed a real, pre-existing gap: `__tests__/App.test.tsx` had been silently broken since react-native-config and the M2 Turbo Module landed (nobody had re-run `npm test` since); both now have Jest mocks.
 - Haptics on record start/stop via the existing module (`onAudioLevel`-driven mic animation counts too).

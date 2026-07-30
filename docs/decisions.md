@@ -12,6 +12,15 @@ related: [architecture.md]
 
 Add a dated entry for every non-obvious choice. Newest first.
 
+## 2026-07-30 — Colocated `.test.ts` files; local native-module mocks via `moduleNameMapper`, not `jest.mock()` per-file
+First real tests in the project (`cardSchema.test.ts`, `extraction.test.ts`, both colocated next to their source in `src/services/`, not in the root `__tests__/` that only holds the RN CLI's stock `App.test.tsx`) — establishing the pattern now since nothing existed before. Colocated over centralized: easier to find, and this codebase has no other precedent to conflict with.
+
+Running the full suite for the first time (`npm test`, not previously part of the typecheck/lint loop this session had been checking) surfaced that `__tests__/App.test.tsx` was already silently broken — first by `react-native-config` (no Jest mock, so its top-level `NativeModules.RNCConfig.getConstants()` call throws under Jest), then by `NativeTranscription`'s `TurboModuleRegistry.getEnforcing('Transcription')` (native module obviously doesn't exist under Jest, and unlike `react-native-mmkv`'s `__mocks__/react-native-mmkv.ts`, this is a *local* file, not a node_modules package, so Jest doesn't auto-apply a sibling `__mocks__` for it). Fixed both:
+- `__mocks__/react-native-config.ts` — same automatic-node_modules-mock pattern as MMKV's, `Config = {}`.
+- `modules/transcription/__mocks__/NativeTranscription.ts` — a local mock, wired in via `jest.config.js`'s `moduleNameMapper` (`'NativeTranscription$'`) since local mocks need an explicit hookup; auto-`__mocks__`-adjacency only works for node_modules packages. Matches the regex against the *import specifier* (`./NativeTranscription`, post-Babel-alias-rewrite), not the resolved absolute path — moduleNameMapper doesn't see resolved paths.
+
+`extraction.test.ts` mocks `react-native-config` per-file (`jest.mock('react-native-config', factory)`) instead, since it needs specific fake `GEMINI_API_KEY`/`GEMINI_MODEL` values — a per-test `jest.mock()` call takes precedence over the root automock for that one file.
+
 ## 2026-07-30 — `@react-native-community/datetimepicker` (v9.1.0) for action-item due dates
 Product spec calls for "native date picker" on action-item rows in Review. This is the de facto standard RN date picker (wraps `UIDatePicker` on iOS, `DatePickerDialog`/`TimePickerDialog` on Android) — no real alternative evaluated, it's the obvious choice for a thin wrapper over each platform's native picker. Autolinked on both platforms; iOS needed `pod install`, Android needed nothing extra.
 
