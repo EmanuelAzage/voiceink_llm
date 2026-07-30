@@ -1,22 +1,26 @@
 import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 import { useSettingsStore } from '@/state/settingsStore';
+import { useCaptureStore } from '@/state/captureStore';
+import { extractCard } from '@/services/extraction';
 import { useTranscription } from '@modules/transcription';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Capture'>;
 
-export default function CaptureScreen(_props: Props) {
+export default function CaptureScreen({ navigation }: Props) {
   const { colors, spacing, typography } = useTheme();
   const language = useSettingsStore(state => state.language);
   const { status, partialTranscript, error, start, stop, requestPermissions } = useTranscription();
-  const [finalTranscript, setFinalTranscript] = useState<string | null>(null);
+  const captureStatus = useCaptureStore(state => state.status);
+  const beginStructuring = useCaptureStore(state => state.beginStructuring);
+  const setExtracted = useCaptureStore(state => state.setExtracted);
+  const setExtractionFailed = useCaptureStore(state => state.setExtractionFailed);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
   const handlePressIn = async () => {
-    setFinalTranscript(null);
     setPermissionDenied(false);
     const permission = await requestPermissions();
     if (permission !== 'granted') {
@@ -31,7 +35,18 @@ export default function CaptureScreen(_props: Props) {
       return;
     }
     const transcript = await stop();
-    setFinalTranscript(transcript);
+    if (!transcript.trim()) {
+      return;
+    }
+
+    beginStructuring(transcript);
+    const result = await extractCard(transcript);
+    if (result.status === 'success') {
+      setExtracted(result.card);
+    } else {
+      setExtractionFailed(result.reason);
+    }
+    navigation.navigate('Review');
   };
 
   if (permissionDenied || error?.code === 'permission_denied') {
@@ -49,16 +64,13 @@ export default function CaptureScreen(_props: Props) {
     );
   }
 
-  if (finalTranscript !== null) {
+  if (captureStatus === 'structuring') {
     return (
-      <View style={[styles.container, styles.transcriptContainer, { backgroundColor: colors.background }]}>
-        <Text style={[typography.caption, { color: colors.textMuted, marginBottom: spacing.sm }]}>
-          Raw transcript (structured review lands in M4)
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.primary} />
+        <Text style={[typography.body, styles.subtitle, { color: colors.textMuted, marginTop: spacing.md }]}>
+          Structuring…
         </Text>
-        <Text style={[typography.body, { color: colors.text }]}>{finalTranscript || '(no speech detected)'}</Text>
-        <Pressable onPress={() => setFinalTranscript(null)} style={{ marginTop: spacing.lg }}>
-          <Text style={{ color: colors.primary }}>Record again</Text>
-        </Pressable>
       </View>
     );
   }
@@ -83,7 +95,6 @@ export default function CaptureScreen(_props: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  transcriptContainer: { justifyContent: 'flex-start' },
   subtitle: { textAlign: 'center' },
   micButton: { width: 96, height: 96, borderRadius: 48 },
 });

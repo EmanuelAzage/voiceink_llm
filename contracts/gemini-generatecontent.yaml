@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: Gemini generateContent (function-calling subset)
+  version: "1.0.0"
+  description: >
+    Not a full Gemini API spec — only the one operation and the request/response
+    fields src/services/extraction.ts actually depends on: forcing a single
+    function call to extract a structured card from a transcript. Verified
+    live against the real API on 2026-07-30 (model: gemini-2.5-flash). If
+    Google changes this shape, extraction.ts breaks; update both together.
+servers:
+  - url: https://generativelanguage.googleapis.com/v1beta
+paths:
+  /models/{model}:generateContent:
+    post:
+      operationId: generateContent
+      parameters:
+        - name: model
+          in: path
+          required: true
+          schema: { type: string }
+          example: gemini-2.5-flash
+        - name: key
+          in: query
+          required: true
+          schema: { type: string }
+          description: API key from https://aistudio.google.com/app/apikey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GenerateContentRequest' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GenerateContentResponse' }
+        '400':
+          description: >
+            Invalid request. Notably: the Schema object used in
+            functionDeclarations.parameters does NOT support
+            `additionalProperties` — including it causes exactly this status
+            with "Unknown name additionalProperties: Cannot find field."
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+components:
+  schemas:
+    GenerateContentRequest:
+      type: object
+      required: [contents, tools, toolConfig]
+      properties:
+        contents:
+          type: array
+          items:
+            type: object
+            required: [role, parts]
+            properties:
+              role: { type: string, enum: [user] }
+              parts:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    text: { type: string }
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              functionDeclarations:
+                type: array
+                items: { $ref: '#/components/schemas/FunctionDeclaration' }
+        toolConfig:
+          type: object
+          properties:
+            functionCallingConfig:
+              type: object
+              properties:
+                mode: { type: string, enum: [ANY] }
+                allowedFunctionNames:
+                  type: array
+                  items: { type: string }
+    FunctionDeclaration:
+      type: object
+      required: [name, parameters]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        parameters:
+          $ref: '#/components/schemas/GeminiSchema'
+    GeminiSchema:
+      description: >
+        Gemini's Schema object — a restricted OpenAPI-3.0 subset. No
+        `additionalProperties` support (see the 400 response above); our own
+        app-level validator (cardSchema.ts's validateExtractedCard) is the
+        real enforcement point for "no extra fields", not this schema.
+      type: object
+      properties:
+        type: { type: string, enum: [object, array, string, number, integer, boolean] }
+        description: { type: string }
+        properties: { type: object }
+        items: { type: object }
+        required:
+          type: array
+          items: { type: string }
+    GenerateContentResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            type: object
+            properties:
+              content:
+                type: object
+                properties:
+                  role: { type: string, enum: [model] }
+                  parts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        functionCall:
+                          type: object
+                          properties:
+                            name: { type: string }
+                            args:
+                              description: The extracted card — see cardSchema.ts's ExtractedCard
+                              type: object
+              finishReason: { type: string }
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: integer }
+            message: { type: string }
+            status: { type: string }

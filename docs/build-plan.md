@@ -30,13 +30,13 @@ Work milestones top to bottom; each ends in a committed, compiling state on both
 - **Accept:** same capture flow works on Android device ✅ 2026-07-29 (real Samsung SM-X230 via USB); parity checklist partially passes — see [native-module-transcription.md](native-module-transcription.md)'s checklist for the itemized state.
 
 ## M4 — Extraction & Review
-- [ ] `cardSchema.ts` + `extraction.ts` (tool-use call, `additionalProperties: false`, timeout, one schema-retry, fallback path).
-- [ ] Review screen: editable fields, AI badges, tag chips, action-item rows with native date picker; Save/Discard.
-- [ ] Raw-transcript fallback save when extraction fails.
-- **Accept:** end-to-end voice → structured card → edited → saved; kill network mid-flow → fallback save works; nothing ever saved without Review.
+- [x] `cardSchema.ts` + `extraction.ts` (tool-use call, `additionalProperties: false`, timeout, one schema-retry, fallback path). ✅ 2026-07-30 (Gemini free tier; needs a real `GEMINI_API_KEY` to exercise against the live API — see [decisions.md](decisions.md))
+- [x] Review screen: editable fields, AI badges, tag chips, action-item rows with native date picker; Save/Discard. ✅ 2026-07-30
+- [x] Raw-transcript fallback save when extraction fails. ✅ 2026-07-30
+- **Accept:** end-to-end voice → structured card → edited → saved; kill network mid-flow → fallback save works; nothing ever saved without Review. Verified: build boots clean on iOS Simulator, Home→Capture navigation works, extraction verified live against the real Gemini API (see [decisions.md](decisions.md)). **Not yet verified:** the actual mic-hold → speak → Review UI path in the simulator — `SFSpeechRecognizer`'s permission prompt isn't grantable via `simctl privacy` (unsupported service), and a real recording needs real audio input, so this needs a manual pass on-device/simulator by a human rather than headless automation.
 
 ## M5 — Persistence, Detail, notifications
-- [ ] Card list on Home (FlatList, swipe-delete + undo); Detail with checkable items and collapsible raw transcript.
+- [ ] Card list on Home (FlatList, swipe-delete + undo); Detail with checkable items and collapsible raw transcript. Basic read-only list (title, date, tags, action-item count) pulled forward into M4 ✅ 2026-07-30 so Save had visible feedback — swipe-delete/undo and the real Detail screen are still open.
 - [ ] Notifee: schedule on dated items, cancel on check-off/delete, tap deep-links to Detail.
 - **Accept:** relaunch app → cards persist; dated action item fires a local notification whose tap opens the right card, on both platforms.
 

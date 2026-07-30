@@ -1,12 +1,6 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
-import { storage } from '@/services/storage';
-
-const mmkvStorage: StateStorage = {
-  getItem: name => storage.getString(name) ?? null,
-  setItem: (name, value) => storage.set(name, value),
-  removeItem: name => storage.remove(name),
-};
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { zustandMmkvStorage } from '@/services/storage';
 
 interface SettingsState {
   language: string;
@@ -21,7 +15,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-store',
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => zustandMmkvStorage),
     },
   ),
 );
