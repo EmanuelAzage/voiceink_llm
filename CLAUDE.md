@@ -46,6 +46,7 @@ cd ios && pod install     # after native dep changes
 - API keys via `.env` (react-native-config), never committed. `.env.example` documents required vars.
 - Never auto-save an AI-generated card. Every card passes through the Review screen.
 - Conventional commits (`feat:`, `fix:`, `docs:`, `chore:`), one logical change per commit.
+- No `Co-Authored-By: Claude` / `Claude-Session:` trailers in commit messages — this is a clean public portfolio repo, keep commit authorship as the human author only.
 
 ## Guardrails
 
