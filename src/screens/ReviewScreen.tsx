@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, { type DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -21,6 +21,7 @@ interface EditableActionItem {
   id: string;
   text: string;
   dueDate?: string; // ISO-8601 (YYYY-MM-DD)
+  done?: boolean;
 }
 
 function toIsoDate(date: Date): string {
@@ -40,23 +41,31 @@ function AIBadge({ show, color }: { show: boolean; color: string }) {
   return <Text style={[styles.aiBadge, { color }]}>AI</Text>;
 }
 
-export default function ReviewScreen({ navigation }: Props) {
+export default function ReviewScreen({ navigation, route }: Props) {
   const { colors, typography, spacing, radii } = useTheme();
+  const editingCardId = route.params?.cardId;
+  const existingCard = useCardStore(state => (editingCardId ? state.cards.find(c => c.id === editingCardId) : undefined));
   const status = useCaptureStore(state => state.status);
   const rawTranscript = useCaptureStore(state => state.rawTranscript);
   const extractedCard = useCaptureStore(state => state.extractedCard);
   const extractionError = useCaptureStore(state => state.extractionError);
   const resetCapture = useCaptureStore(state => state.reset);
   const addCard = useCardStore(state => state.addCard);
+  const updateCard = useCardStore(state => state.updateCard);
 
-  const [title, setTitle] = useState(() => extractedCard?.title ?? '');
-  const [summary, setSummary] = useState(() => extractedCard?.summary ?? '');
-  const [tags, setTags] = useState<string[]>(() => extractedCard?.tags ?? []);
+  const [title, setTitle] = useState(() => existingCard?.title ?? extractedCard?.title ?? '');
+  const [summary, setSummary] = useState(() => existingCard?.summary ?? extractedCard?.summary ?? '');
+  const [tags, setTags] = useState<string[]>(() => existingCard?.tags ?? extractedCard?.tags ?? []);
   const [tagInput, setTagInput] = useState('');
-  const [actionItems, setActionItems] = useState<EditableActionItem[]>(
-    () => extractedCard?.actionItems.map(item => ({ id: generateId(), ...item })) ?? [],
+  const [actionItems, setActionItems] = useState<EditableActionItem[]>(() => {
+    if (existingCard) return existingCard.actionItems.map(({ id, text, dueDate, done }) => ({ id, text, dueDate, done }));
+    return extractedCard?.actionItems.map(item => ({ id: generateId(), ...item })) ?? [];
+  });
+  const [touched, setTouched] = useState(() =>
+    existingCard
+      ? { title: true, summary: true, tags: true, actionItems: true }
+      : { title: false, summary: false, tags: false, actionItems: false },
   );
-  const [touched, setTouched] = useState({ title: false, summary: false, tags: false, actionItems: false });
   const [datePickerFor, setDatePickerFor] = useState<string | null>(null);
 
   const finishAndGoHome = () => {
@@ -64,16 +73,38 @@ export default function ReviewScreen({ navigation }: Props) {
     navigation.popTo('Home');
   };
 
+  const handleDiscard = () => {
+    if (existingCard) {
+      navigation.popTo('Detail', { cardId: existingCard.id });
+      return;
+    }
+    finishAndGoHome();
+  };
+
   const handleSave = () => {
+    const actionItemsPayload = actionItems
+      .filter(item => item.text.trim())
+      .map(item => ({ id: item.id, text: item.text.trim(), dueDate: item.dueDate, done: item.done ?? false }));
+
+    if (existingCard) {
+      updateCard({
+        ...existingCard,
+        title: title.trim() || 'Untitled note',
+        summary: summary.trim(),
+        tags,
+        actionItems: actionItemsPayload,
+      });
+      navigation.popTo('Detail', { cardId: existingCard.id });
+      return;
+    }
+
     const card: Card = {
       id: generateId(),
       createdAt: new Date().toISOString(),
       title: title.trim() || 'Untitled note',
       summary: summary.trim(),
       tags,
-      actionItems: actionItems
-        .filter(item => item.text.trim())
-        .map(item => ({ id: item.id, text: item.text.trim(), dueDate: item.dueDate, done: false })),
+      actionItems: actionItemsPayload,
       rawTranscript,
       source: 'ai',
     };
@@ -134,16 +165,20 @@ export default function ReviewScreen({ navigation }: Props) {
     setTouched(prev => ({ ...prev, actionItems: true }));
   };
 
-  const handleDateChange = (id: string) => (event: DateTimePickerEvent, selectedDate?: Date) => {
+  const handleDateValueChange = (id: string) => (_event: DateTimePickerChangeEvent, date: Date) => {
+    updateActionItemDate(id, date);
     if (Platform.OS === 'android') {
       setDatePickerFor(null);
     }
-    if (event.type === 'set' && selectedDate) {
-      updateActionItemDate(id, selectedDate);
+  };
+
+  const handleDateDismiss = () => {
+    if (Platform.OS === 'android') {
+      setDatePickerFor(null);
     }
   };
 
-  if (status === 'error') {
+  if (!existingCard && status === 'error') {
     return (
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
         <Text style={[typography.heading, { color: colors.text }]}>Couldn't structure this note</Text>
@@ -164,7 +199,7 @@ export default function ReviewScreen({ navigation }: Props) {
     );
   }
 
-  if (status !== 'reviewing' || !extractedCard) {
+  if (!existingCard && (status !== 'reviewing' || !extractedCard)) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
         <Text style={[typography.body, { color: colors.textMuted }]}>Nothing to review yet.</Text>
@@ -264,7 +299,8 @@ export default function ReviewScreen({ navigation }: Props) {
               value={item.dueDate ? fromIsoDate(item.dueDate) : new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              onChange={handleDateChange(item.id)}
+              onValueChange={handleDateValueChange(item.id)}
+              onDismiss={handleDateDismiss}
             />
           )}
         </View>
@@ -279,7 +315,7 @@ export default function ReviewScreen({ navigation }: Props) {
       </Pressable>
 
       <View style={[styles.row, { marginTop: spacing.xl }]}>
-        <Pressable onPress={finishAndGoHome}>
+        <Pressable onPress={handleDiscard}>
           <Text style={{ color: colors.textMuted }}>Discard</Text>
         </Pressable>
         <Pressable onPress={handleSave}>

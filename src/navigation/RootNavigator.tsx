@@ -1,6 +1,8 @@
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { useEffect } from 'react';
+import { NavigationContainer, createNavigationContainerRef, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator, type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable, Text } from 'react-native';
+import notifee, { EventType } from '@notifee/react-native';
 import type { RootStackParamList } from './types';
 import HomeScreen from '@/screens/HomeScreen';
 import CaptureScreen from '@/screens/CaptureScreen';
@@ -8,8 +10,25 @@ import ReviewScreen from '@/screens/ReviewScreen';
 import DetailScreen from '@/screens/DetailScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import { useTheme } from '@/theme';
+import { consumePendingDeepLinkCardId } from '@/services/notifications';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+// The container isn't necessarily ready the instant a tap/cold-start deep
+// link resolves (getInitialNotification is async), so a nav requested too
+// early is queued here and flushed from NavigationContainer's onReady below.
+let pendingNavigation: (() => void) | null = null;
+
+function navigateToCardDetail(cardId: string) {
+  const action = () => navigationRef.navigate('Detail', { cardId });
+  if (navigationRef.isReady()) {
+    action();
+  } else {
+    pendingNavigation = action;
+  }
+}
 
 // Defined once at module scope (not inside RootNavigator's render) and passed by
 // reference to `headerRight` below, so it never trips eslint's
@@ -26,8 +45,29 @@ function HomeHeaderRight() {
 }
 
 export function RootNavigator() {
+  useEffect(() => {
+    notifee.getInitialNotification().then(initial => {
+      const cardId = initial?.notification.data?.cardId;
+      if (typeof cardId === 'string') navigateToCardDetail(cardId);
+    });
+
+    const pendingCardId = consumePendingDeepLinkCardId();
+    if (pendingCardId) navigateToCardDetail(pendingCardId);
+
+    return notifee.onForegroundEvent(({ type, detail }) => {
+      const cardId = detail.notification?.data?.cardId;
+      if (type === EventType.PRESS && typeof cardId === 'string') navigateToCardDetail(cardId);
+    });
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        pendingNavigation?.();
+        pendingNavigation = null;
+      }}
+    >
       <Stack.Navigator initialRouteName="Home">
         <Stack.Screen
           name="Home"

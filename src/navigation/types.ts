@@ -1,7 +1,7 @@
 export type RootStackParamList = {
   Home: undefined;
   Capture: undefined;
-  Review: undefined;
+  Review: { cardId?: string } | undefined;
   Detail: { cardId: string };
   Settings: undefined;
 };

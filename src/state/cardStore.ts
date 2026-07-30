@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { zustandMmkvStorage } from '@/services/storage';
+import { cancelActionItemNotification, scheduleActionItemNotification } from '@/services/notifications';
 
 export interface ActionItem {
   id: string;
@@ -28,14 +29,85 @@ export function generateId(): string {
 interface CardState {
   cards: Card[];
   addCard: (card: Card) => void;
+  updateCard: (card: Card) => void;
+  deleteCard: (id: string) => void;
+  toggleActionItemDone: (cardId: string, itemId: string) => void;
 }
 
 export const useCardStore = create<CardState>()(
   persist(
-    set => ({
-      cards: [],
-      addCard: card => set(state => ({ cards: [card, ...state.cards] })),
-    }),
+    (set, get) => {
+      // Schedules a notification for each dated, not-yet-done action item on
+      // `card`, then patches its `notificationId` once scheduling resolves —
+      // scheduling is async (it may prompt for permission), so this can't
+      // happen synchronously inside the add/update call itself.
+      const scheduleAndPatch = (card: Card) => {
+        card.actionItems.forEach(item => {
+          if (item.dueDate && !item.done) {
+            scheduleActionItemNotification(card, item).then(scheduled => {
+              if (!scheduled) return;
+              set(state => ({
+                cards: state.cards.map(c =>
+                  c.id !== card.id
+                    ? c
+                    : { ...c, actionItems: c.actionItems.map(i => (i.id === item.id ? { ...i, notificationId: item.id } : i)) },
+                ),
+              }));
+            });
+          }
+        });
+      };
+
+      return {
+        cards: [],
+
+        addCard: card => {
+          set(state => ({ cards: [card, ...state.cards] }));
+          scheduleAndPatch(card);
+        },
+
+        updateCard: card => {
+          const previous = get().cards.find(c => c.id === card.id);
+          previous?.actionItems.forEach(item => {
+            if (item.notificationId) cancelActionItemNotification(item.notificationId);
+          });
+          set(state => ({ cards: state.cards.map(c => (c.id === card.id ? card : c)) }));
+          scheduleAndPatch(card);
+        },
+
+        deleteCard: id => {
+          const card = get().cards.find(c => c.id === id);
+          card?.actionItems.forEach(item => {
+            if (item.notificationId) cancelActionItemNotification(item.notificationId);
+          });
+          set(state => ({ cards: state.cards.filter(c => c.id !== id) }));
+        },
+
+        toggleActionItemDone: (cardId, itemId) => {
+          const card = get().cards.find(c => c.id === cardId);
+          const item = card?.actionItems.find(i => i.id === itemId);
+          if (!item) return;
+
+          const nowDone = !item.done;
+          if (nowDone && item.notificationId) {
+            cancelActionItemNotification(item.notificationId);
+          }
+
+          set(state => ({
+            cards: state.cards.map(c =>
+              c.id !== cardId
+                ? c
+                : {
+                    ...c,
+                    actionItems: c.actionItems.map(i =>
+                      i.id !== itemId ? i : { ...i, done: nowDone, notificationId: nowDone ? undefined : i.notificationId },
+                    ),
+                  },
+            ),
+          }));
+        },
+      };
+    },
     {
       name: 'card-store',
       storage: createJSONStorage(() => zustandMmkvStorage),
