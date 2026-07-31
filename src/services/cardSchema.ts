@@ -1,3 +1,5 @@
+import { isValidIsoDate } from './date';
+
 export interface ExtractedActionItem {
   text: string;
   dueDate?: string;
@@ -62,8 +64,15 @@ export function validateExtractedCard(value: unknown): ExtractedCard | null {
     if (typeof item !== 'object' || item === null) return null;
     const i = item as Record<string, unknown>;
     if (typeof i.text !== 'string') return null;
-    if (i.dueDate !== undefined && typeof i.dueDate !== 'string') return null;
-    actionItems.push(i.dueDate === undefined ? { text: i.text } : { text: i.text, dueDate: i.dueDate });
+
+    // A malformed dueDate (wrong type, wrong format, or a real-looking but
+    // nonexistent date like "2026-02-30") drops just the date rather than
+    // rejecting the whole card — seen in practice from a weaker model
+    // returning garbage like `"dueDate": "text:"` alongside otherwise-good
+    // extraction; losing one due date is a much smaller failure than losing
+    // the whole card to a retry/fallback over one bad field.
+    const dueDate = typeof i.dueDate === 'string' && isValidIsoDate(i.dueDate) ? i.dueDate : undefined;
+    actionItems.push(dueDate === undefined ? { text: i.text } : { text: i.text, dueDate });
   }
 
   return {

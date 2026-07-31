@@ -2,7 +2,7 @@ import { extractCard } from './extraction';
 
 jest.mock('react-native-config', () => ({
   __esModule: true,
-  default: { GEMINI_API_KEY: 'test-api-key', GEMINI_MODEL: 'test-model' },
+  default: { GEMINI_API_KEY: 'test-api-key', GEMINI_MODEL: 'test-model', GEMINI_FALLBACK_MODEL: 'test-fallback-model' },
 }));
 
 const validCard = {
@@ -120,5 +120,50 @@ describe('extractCard', () => {
     const result = await extractCard('Remind me to call the dentist tomorrow');
 
     expect(result).toEqual({ status: 'error', reason: 'invalid-response' });
+  });
+
+  it('falls back to the fallback model when the primary is rate-limited (429)', async () => {
+    mockFetch
+      .mockResolvedValueOnce(mockFetchResponse({ error: 'rate limited' }, { ok: false, status: 429 }))
+      .mockResolvedValueOnce(mockFetchResponse(geminiResponseBody(validCard)));
+
+    const result = await extractCard('Remind me to call the dentist tomorrow');
+
+    expect(result).toEqual({ status: 'success', card: validCard });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[0][0]).toContain('/models/test-model:');
+    expect(mockFetch.mock.calls[1][0]).toContain('/models/test-fallback-model:');
+  });
+
+  it('does not burn a schema-retry attempt on a rate-limited model before falling back', async () => {
+    mockFetch
+      .mockResolvedValueOnce(mockFetchResponse({ error: 'rate limited' }, { ok: false, status: 429 }))
+      .mockResolvedValueOnce(mockFetchResponse(geminiResponseBody(validCard)));
+
+    await extractCard('Remind me to call the dentist tomorrow');
+
+    // exactly 2 calls total: 1 for the rate-limited primary (no schema
+    // retry burned on it), 1 for the fallback's successful attempt
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports network when every configured model is rate-limited', async () => {
+    mockFetch
+      .mockResolvedValueOnce(mockFetchResponse({ error: 'rate limited' }, { ok: false, status: 429 }))
+      .mockResolvedValueOnce(mockFetchResponse({ error: 'rate limited' }, { ok: false, status: 429 }));
+
+    const result = await extractCard('Remind me to call the dentist tomorrow');
+
+    expect(result).toEqual({ status: 'error', reason: 'network' });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not try a fallback model for a non-429 error', async () => {
+    mockFetch.mockResolvedValueOnce(mockFetchResponse({ error: 'server error' }, { ok: false, status: 500 }));
+
+    const result = await extractCard('Remind me to call the dentist tomorrow');
+
+    expect(result).toEqual({ status: 'error', reason: 'network' });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

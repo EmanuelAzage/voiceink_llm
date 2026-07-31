@@ -4,7 +4,7 @@ import { toLocalIsoDate } from './date';
 
 const TIMEOUT_MS = 15000;
 const FUNCTION_NAME = 'extract_card';
-const MAX_ATTEMPTS = 2; // one schema-conformance retry per architecture.md
+const MAX_ATTEMPTS = 2; // one schema-conformance retry per model, per architecture.md
 
 export type ExtractionResult =
   | { status: 'success'; card: ExtractedCard }
@@ -19,6 +19,16 @@ interface GeminiPart {
 }
 interface GeminiResponse {
   candidates?: { content?: { parts?: GeminiPart[] } }[];
+}
+
+class GeminiHttpError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'GeminiHttpError';
+  }
 }
 
 function buildRequestBody(transcript: string, today: string, retryHint?: string) {
@@ -49,11 +59,9 @@ function buildRequestBody(transcript: string, today: string, retryHint?: string)
   };
 }
 
-async function callGemini(transcript: string, today: string, retryHint?: string): Promise<unknown> {
+async function callGemini(model: string, transcript: string, today: string, retryHint?: string): Promise<unknown> {
   const apiKey = Config.GEMINI_API_KEY;
-  const model = Config.GEMINI_MODEL;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set — see .env.example');
-  if (!model) throw new Error('GEMINI_MODEL is not set — see .env.example');
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -70,7 +78,7 @@ async function callGemini(transcript: string, today: string, retryHint?: string)
     );
 
     if (!response.ok) {
-      throw new Error(`Gemini API error ${response.status}: ${await response.text()}`);
+      throw new GeminiHttpError(response.status, `Gemini API error ${response.status}: ${await response.text()}`);
     }
 
     const json = (await response.json()) as GeminiResponse;
@@ -81,17 +89,29 @@ async function callGemini(transcript: string, today: string, retryHint?: string)
   }
 }
 
-export async function extractCard(transcript: string): Promise<ExtractionResult> {
-  const today = toLocalIsoDate(new Date());
+/**
+ * Runs the existing one-schema-retry flow against a single model. A 429
+ * short-circuits immediately (no point burning a schema-retry attempt on a
+ * model that's already rate-limited) and is reported distinctly so the
+ * caller can fall back to a different model — see extractCard().
+ */
+async function extractWithModel(
+  model: string,
+  transcript: string,
+  today: string,
+): Promise<ExtractionResult | { status: 'rate-limited' }> {
   let retryHint: string | undefined;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     let args: unknown;
     try {
-      args = await callGemini(transcript, today, retryHint);
+      args = await callGemini(model, transcript, today, retryHint);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return { status: 'error', reason: 'timeout' };
+      }
+      if (error instanceof GeminiHttpError && error.status === 429) {
+        return { status: 'rate-limited' };
       }
       return { status: 'error', reason: 'network' };
     }
@@ -104,4 +124,27 @@ export async function extractCard(transcript: string): Promise<ExtractionResult>
   }
 
   return { status: 'error', reason: 'invalid-response' };
+}
+
+export async function extractCard(transcript: string): Promise<ExtractionResult> {
+  const today = toLocalIsoDate(new Date());
+
+  // GEMINI_FALLBACK_MODEL is optional — if unset, this is just [primary],
+  // same single-model behavior as before this existed.
+  const models = [Config.GEMINI_MODEL, Config.GEMINI_FALLBACK_MODEL].filter(
+    (model): model is string => typeof model === 'string' && model.length > 0,
+  );
+
+  if (models.length === 0) {
+    return { status: 'error', reason: 'network' };
+  }
+
+  for (const model of models) {
+    const result = await extractWithModel(model, transcript, today);
+    if (result.status !== 'rate-limited') return result;
+    // rate-limited on this model — fall through and try the next one, if any
+  }
+
+  // every configured model, including any fallback, was rate-limited
+  return { status: 'error', reason: 'network' };
 }

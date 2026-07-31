@@ -87,10 +87,34 @@ describe('validateExtractedCard', () => {
     expect(validateExtractedCard({ ...validCard, actionItems: [{ text: 42 }] })).toBeNull();
   });
 
-  it('rejects an action item whose dueDate is not a string', () => {
-    expect(
-      validateExtractedCard({ ...validCard, actionItems: [{ text: 'call the dentist', dueDate: 20260731 }] }),
-    ).toBeNull();
+  it('drops a non-string dueDate but keeps the action item', () => {
+    const result = validateExtractedCard({
+      ...validCard,
+      actionItems: [{ text: 'call the dentist', dueDate: 20260731 }],
+    });
+    expect(result?.actionItems).toEqual([{ text: 'call the dentist' }]);
+  });
+
+  it.each([
+    ['garbage text', 'text:'],
+    ['wrong separator', '2026/07/31'],
+    ['unpadded month/day', '2026-7-31'],
+    ['nonexistent day (Feb 30)', '2026-02-30'],
+    ['nonexistent month', '2026-13-01'],
+  ])('drops a malformed dueDate (%s) but keeps the action item', (_label, badDueDate) => {
+    const result = validateExtractedCard({
+      ...validCard,
+      actionItems: [{ text: 'call the dentist', dueDate: badDueDate }],
+    });
+    expect(result?.actionItems).toEqual([{ text: 'call the dentist' }]);
+  });
+
+  it('keeps a valid dueDate on a leap day', () => {
+    const result = validateExtractedCard({
+      ...validCard,
+      actionItems: [{ text: 'call the dentist', dueDate: '2028-02-29' }],
+    });
+    expect(result?.actionItems).toEqual([{ text: 'call the dentist', dueDate: '2028-02-29' }]);
   });
 
   it('rejects a non-object action item', () => {
