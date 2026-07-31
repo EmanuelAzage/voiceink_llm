@@ -52,11 +52,11 @@ Work milestones top to bottom; each ends in a committed, compiling state on both
 - [x] Animated + haptic mic button — pulse/glow reactive to the Turbo Module's existing `onAudioLevel` stream (previously unused for visuals); haptic feedback on record start/stop, save, and delete. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Micro-interactions: press-scale animation on card rows/buttons via `react-native-reanimated` (already installed). ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Sentry (`@sentry/react-native`): crash reporting plus custom events for `extractCard`'s outcome (`timeout`/`network`/`invalid-response`/rate-limit-fallback-used), so extraction reliability is actually observable, not just handled. ✅ 2026-07-30 — see [decisions.md](decisions.md)
-- [ ] README: fill the placeholder comments in the existing `README.md` — screenshots (iOS + Android, light + dark), verified setup instructions on a clean machine, `.env.example` committed.
+- [x] README: fill the placeholder comments in the existing `README.md` — screenshots (iOS + Android, light + dark), verified setup instructions on a clean machine, `.env.example` committed. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Squash noisy WIP commits; public repo. ✅ already satisfied — history was already conventional-commit-clean with no WIP noise to squash (confirmed via `git log --oneline`), and the repo was already public (confirmed via `gh repo view`). No action needed for either.
 - **Accept:** a stranger can clone, add an API key, and run both platforms from README alone.
 
 ## Stretch (only if time remains)
 - Streaming the LLM response into the Review screen field-by-field.
 - [x] Jest tests for `cardSchema.ts`/`extraction.ts` schema handling; one native-module mock test. ✅ 2026-07-30 — see [decisions.md](decisions.md). Surfaced and fixed a real, pre-existing gap: `__tests__/App.test.tsx` had been silently broken since react-native-config and the M2 Turbo Module landed (nobody had re-run `npm test` since); both now have Jest mocks.
-- Haptics on record start/stop via the existing module (`onAudioLevel`-driven mic animation counts too).
+- [x] Haptics on record start/stop via the existing module (`onAudioLevel`-driven mic animation counts too). ✅ 2026-07-30 — done as part of M6's animated + haptic mic button, see [decisions.md](decisions.md)

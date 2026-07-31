@@ -4,9 +4,12 @@ Hold a button, ramble, release — get back a clean, structured, editable note c
 
 VoiceInk is a React Native (New Architecture) app for iOS and Android. Speech is transcribed on-device by a hand-written Turbo Module, an LLM structures the transcript into a card (title, summary, tags, action items with dates), and the user reviews and edits before anything is saved. Dated action items schedule local notification reminders.
 
-> **Status:** in active development — see [docs/build-plan.md](docs/build-plan.md) for milestone progress.
+> **Status:** M1–M6 complete — see [docs/build-plan.md](docs/build-plan.md) for milestone detail.
 
-<!-- M6: screenshots — iOS + Android, light + dark, capture → review → home -->
+| | | |
+|---|---|---|
+| ![iOS, light](docs/screenshots/ios-light-home.png) | ![iOS, dark](docs/screenshots/ios-dark-home.png) | ![iOS, dark, recording](docs/screenshots/ios-dark-capture.png) |
+| ![Android, light, with cards](docs/screenshots/android-light-home.png) | ![Android, dark, with cards](docs/screenshots/android-dark-home.png) | ![Android, dark, card detail](docs/screenshots/android-dark-detail.png) |
 
 ## Why this app exists
 
@@ -39,19 +42,22 @@ This repo was built AI-natively: agents (Claude Code) did the drafting against t
 
 ## Running it
 
-Prereqs: Node 20+, Xcode 16+, Android Studio (SDK 35), CocoaPods, JDK 17.
+Prereqs: Node 22.11+ (pinned in `package.json`'s `engines`), Xcode 16+, Android Studio (SDK 36), CocoaPods, JDK 17+.
 
 ```bash
 git clone <repo> && cd VoiceInk
 npm install
-cp .env.example .env      # add your LLM API key
+cp .env.example .env      # add your Gemini API key (GEMINI_API_KEY) — the only required var; see .env.example for the rest
 cd ios && pod install && cd ..   # RN still orchestrates iOS deps via CocoaPods; see docs/decisions.md on the SPM transition
 npm run ios               # or: npm run android
 ```
 
-<!-- M6: verify these instructions on a clean machine; add troubleshooting for common RN env issues -->
-
 Speech recognition uses platform APIs (no model downloads). The LLM call requires a network connection and an API key; if extraction fails, the app falls back to saving the raw transcript so no speech is lost.
+
+**Troubleshooting:**
+- **Android build fails with `AAPT2 ... Daemon startup failed`** — a stale Gradle daemon, not a real project issue. Fix: `cd android && ./gradlew --stop`, then re-run `npm run android`.
+- **iOS build can't find a dependency after adding one** — re-run `cd ios && pod install`; any new native dependency needs autolinking to pick it up.
+- **Metro serves stale code after a native dependency change** — stop Metro and clear its cache: `npm start -- --reset-cache`.
 
 ## Project map
 

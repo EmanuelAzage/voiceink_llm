@@ -4,13 +4,24 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-31T01:30:00Z
+timestamp: 2026-07-31T01:45:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-30 — README: real screenshots, corrected prereqs, troubleshooting — the last M6 item
+Closed out M6's final checklist item. Three things, in order of how much they actually mattered:
+
+**Corrected two real inaccuracies in the "Running it" prereqs**, found by checking claims against ground truth rather than trusting what was already written: README said "Node 20+" but `package.json`'s own `engines` field pins `>= 22.11.0` — a stranger following the README literally could hit an engines mismatch npm would warn (or, depending on their npm config, refuse) about. README said "Android Studio (SDK 35)" but `android/build.gradle` has `compileSdkVersion`/`targetSdkVersion` at 36. Both fixed to match the actual project config, not re-guessed.
+
+**Added a troubleshooting section** for the two concrete environment issues actually hit multiple times this session and already logged elsewhere in this doc — the AAPT2 stale-Gradle-daemon build failure (M5's entry, recurred during M6's Android testing) and the general "new native dep needs `pod install`" pattern (true every single time a dependency was added this session: notifee, gesture-handler, datetimepicker, Sentry, lucide/svg, haptic-feedback). These are exactly the "common RN env issues" the README's own placeholder comment had flagged — real, repeated friction, not hypothetical ones.
+
+**Real screenshots**, not staged/mocked data — `docs/screenshots/`: iOS Simulator (light Home, dark Home, dark Capture mid-recording, toggled live via `xcrun simctl ui ... appearance`) and the real Samsung SM-X230 tablet (light and dark Home with its actual saved cards, dark Detail — toggled via `adb shell cmd uimode night yes/no`, then restored to the tablet's original dark preference afterward). The dark-mode screenshots are also what caught the nav-header bug fixed in the entry above — screenshots taken for documentation purposes surfaced a real bug before the bug fix's own entry was even written.
+
+Verified the setup commands themselves are accurate (already run `npm install`/`pod install`/`npm run ios`/`npm run android` repeatedly and successfully this session) rather than only reading them — not a from-scratch clean-machine run (this machine already has Xcode/Android Studio/CocoaPods/JDK installed), but every command in the README was in fact executed successfully against this exact repo state during this session's other tasks, which is the practical ceiling of "verified" available here.
 
 ## 2026-07-30 — Fixed: native-stack header stayed light in dark mode (`NavigationContainer` had no `theme`)
 Real, already-observed bug, not a hypothetical review finding — visible in Android screenshots taken earlier this session (the header bar stayed white while the screen body went dark). Root cause: `NavigationContainer` was never given a `theme` prop, so React Navigation's native-stack header chrome (background, text, border) falls back to its own built-in `DefaultTheme` (light) regardless of the OS color scheme — completely independent of this app's own `useTheme()`/`useColorScheme()` that every screen body already reads correctly. Fixed by building `lightNavTheme`/`darkNavTheme` (`RootNavigator.tsx`) from this app's own `colors.light`/`colors.dark` tokens — not React Navigation's generic default palette — spread over `DefaultTheme`/`DarkTheme` for the `fonts` shape v7's `Theme` type requires, then selecting one via `useTheme()`'s `scheme` and passing it to `<NavigationContainer theme={...}>`. Verified live: rebuilt and re-screenshotted the same screens (Home, Detail) on the real Samsung tablet — header now matches the dark body correctly; iOS light mode re-checked for no regression.
