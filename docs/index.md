@@ -14,6 +14,7 @@ VoiceInk is a React Native (New Architecture, TypeScript) voice-notes app for iO
 * [VoiceInk Build Plan](build-plan.md) - Milestone breakdown (M1-M6) with acceptance criteria; work top to bottom
 * [VoiceInk Decisions](decisions.md) - ADR-lite log of technical choices and rationale; check before adding dependencies
 * [React Native Learning Notes](rn-learning-notes.md) - Living doc of RN internals; append notes as concepts come up during the build
+* [Mobile Accessibility Engineering Guide & Audit Checklist](mobile-accessibility-engineering-guide.md) - WCAG 2.1/2.2 reference copied from a sibling SwiftUI/Skip project; background reading, not applied verbatim to this RN codebase
 
 # History
 

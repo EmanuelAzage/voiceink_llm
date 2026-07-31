@@ -4,13 +4,24 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-31T00:55:00Z
+timestamp: 2026-07-31T01:15:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-30 — Accessibility pass: screen-reader mic toggle, labels/roles, touch targets; copied a reference guide from a sibling project
+Copied `docs/mobile-accessibility-engineering-guide.md` in from a sibling native iOS/Skip project at the developer's request — a WCAG 2.1/2.2 reference and audit checklist, kept largely as-is with a scope note at the top clarifying it's SwiftUI/Skip/government-VPAT-specific background reading, not a checklist applied verbatim to this RN app (see that doc's own scope note for what does and doesn't transfer). Used it to inform this pass's priorities (the three-assistive-technology mental model, touch-target minimums, the labels-vs-hints distinction) rather than following its checklist item-by-item.
+
+**Screen-reader mic toggle (the concrete item build-plan.md named).** `CaptureScreen`'s mic button was press-and-hold only — a gesture VoiceOver/TalkBack's own tap vocabulary doesn't cleanly support (a screen reader intercepts the interaction as double-tap-and-hold, awkward to discover and easy to release accidentally). Added `AccessibilityInfo.isScreenReaderEnabled()` + a `screenReaderChanged` listener; when a screen reader is running, the mic button becomes a tap-to-start/tap-to-stop toggle (`handleMicTap`, calling the same `beginRecording`/`endRecording` the hold gesture already used) instead of `onPressIn`/`onPressOut`, with `accessibilityLabel` and the on-screen prompt text both switching to reflect it ("Start/Stop recording", "Double-tap the mic to start talking"). Verified the non-screen-reader path still works exactly as before (iOS Simulator, full record-start-to-stop cycle, no VoiceOver running).
+
+**Labels, roles, and touch targets — systematic, not spot-fixes.** Went screen by screen adding `accessibilityRole` (`button`/`header`/`checkbox`) to every interactive/heading element that lacked one, `accessibilityLabel` on every icon-only control (tag/date/action-item remove buttons, the Settings gear, Detail's checkbox rows composing item text + due date + reminder status into one spoken label), and `hitSlop` on the small icon-only `Pressable`s in `ReviewScreen` (clear-date `X`, remove-item `Trash2`) whose visual size was well under the 44×44pt/48×48dp minimum both platforms' own accessibility tooling flags. Home's card rows also gained `accessibilityActions`/`onAccessibilityAction` exposing "Delete" as a discoverable non-gesture alternative to the swipe-to-delete gesture — swipe gestures aren't reliably discoverable under a screen reader (VoiceOver/TalkBack capture horizontal swipes for their own navigation), so an equivalent action needs to exist outside the gesture.
+
+**Checked, no change needed:** Dynamic Type — RN's `Text` scales with the system font setting by default and nothing in this codebase sets `allowFontScaling={false}` or a fixed height around scaling text, so this was already correct, not a gap to fix. Color contrast — hand-computed WCAG relative-luminance contrast ratios for every text/background pair in both themes (`src/theme/colors.ts`); all comfortably clear 4.5:1 (worst case: light-mode `danger` red on white at 4.83:1), no adjustment needed.
+
+**Verification:** ran the iOS Simulator accessibility-tree audit (`accessibility_audit.py`, from the ios-simulator-skill) against Home, Capture, and Settings — 0 critical issues on each; the remaining "missing traits" warnings are the tool's own noise (it flags elements like the native-stack header title and the root `Application` node that already report the correct native type and aren't ours to change). Also manually verified Detail and Review render and function correctly on the real Samsung SM-X230 tablet after the changes (checkbox toggle, tag/date remove, Save/Discard) — no crashes, no regressions. Did not verify with an actual screen reader (VoiceOver/TalkBack) turned on and navigating live — the toggle-mode code path is logically verified (same `beginRecording`/`endRecording` functions as the working hold-gesture path, gated by a state flag) but not exercised end-to-end with a real screen reader session; worth a follow-up pass before calling this fully done.
 
 ## 2026-07-30 — Implemented press-scale micro-interactions: a shared `AnimatedPressable`, applied selectively
 First real file in `src/components/` — `architecture.md`'s project-structure listing had named `CardRow`/`TagChips`/`ActionItemRow`/`MicButton`/`AIBadge` as if they were already extracted there since early planning, but none ever were; everything stayed inline in screens. Corrected that listing to match reality instead of leaving a second stale aspirational list around.

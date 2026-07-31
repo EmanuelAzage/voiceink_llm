@@ -180,17 +180,19 @@ export default function ReviewScreen({ navigation, route }: Props) {
   if (!existingCard && status === 'error') {
     return (
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[typography.heading, { color: colors.text }]}>Couldn't structure this note</Text>
+        <Text accessibilityRole="header" style={[typography.heading, { color: colors.text }]}>
+          Couldn't structure this note
+        </Text>
         <Text style={[typography.body, { color: colors.textMuted, marginTop: spacing.sm }]}>
           {extractionError ? ERROR_MESSAGES[extractionError] : 'Something went wrong.'} You can still save the raw
           transcript.
         </Text>
         <Text style={[typography.body, { color: colors.text, marginTop: spacing.lg }]}>{rawTranscript}</Text>
         <View style={[styles.row, { marginTop: spacing.xl }]}>
-          <Pressable onPress={finishAndGoHome}>
+          <Pressable accessibilityRole="button" onPress={finishAndGoHome}>
             <Text style={{ color: colors.textMuted }}>Discard</Text>
           </Pressable>
-          <AnimatedPressable onPress={handleSaveRaw}>
+          <AnimatedPressable accessibilityRole="button" onPress={handleSaveRaw}>
             <Text style={[typography.body, styles.bold, { color: colors.primary }]}>Save transcript</Text>
           </AnimatedPressable>
         </View>
@@ -202,7 +204,7 @@ export default function ReviewScreen({ navigation, route }: Props) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
         <Text style={[typography.body, { color: colors.textMuted }]}>Nothing to review yet.</Text>
-        <Pressable onPress={finishAndGoHome} style={{ marginTop: spacing.lg }}>
+        <Pressable accessibilityRole="button" onPress={finishAndGoHome} style={{ marginTop: spacing.lg }}>
           <Text style={{ color: colors.primary }}>Back to Home</Text>
         </Pressable>
       </View>
@@ -246,6 +248,8 @@ export default function ReviewScreen({ navigation, route }: Props) {
         {tags.map(tag => (
           <Pressable
             key={tag}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove tag ${tag}`}
             onPress={() => removeTag(tag)}
             style={[styles.tagChip, styles.tagChipRow, { backgroundColor: colors.surface, borderRadius: radii.pill }]}
           >
@@ -264,14 +268,16 @@ export default function ReviewScreen({ navigation, route }: Props) {
             placeholderTextColor={colors.textMuted}
             style={[typography.body, styles.input, styles.tagInput, { color: colors.text, borderColor: colors.border }]}
           />
-          <Pressable onPress={addTag} style={{ marginLeft: spacing.sm }}>
+          <Pressable accessibilityRole="button" onPress={addTag} style={{ marginLeft: spacing.sm }}>
             <Text style={{ color: colors.primary }}>Add</Text>
           </Pressable>
         </View>
       )}
 
       <View style={[styles.fieldLabelRow, { marginTop: spacing.lg }]}>
-        <Text style={[typography.heading, { color: colors.text }]}>Action items</Text>
+        <Text accessibilityRole="header" style={[typography.heading, { color: colors.text }]}>
+          Action items
+        </Text>
         <AIBadge show={!touched.actionItems} color={colors.primary} />
       </View>
       {actionItems.map(item => (
@@ -283,21 +289,30 @@ export default function ReviewScreen({ navigation, route }: Props) {
             placeholderTextColor={colors.textMuted}
             style={[typography.body, styles.flexInput, { color: colors.text }]}
           />
-          <Pressable onPress={() => setDatePickerFor(item.id)}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={item.dueDate ? `Due date: ${item.dueDate}` : 'Set date'}
+            hitSlop={12}
+            onPress={() => setDatePickerFor(item.id)}
+          >
             <Text style={[typography.caption, { color: colors.primary }]}>{item.dueDate ?? 'Set date'}</Text>
           </Pressable>
           {item.dueDate && (
             <Pressable
-              onPress={() => clearActionItemDate(item.id)}
+              accessibilityRole="button"
               accessibilityLabel="Clear date"
+              hitSlop={16}
+              onPress={() => clearActionItemDate(item.id)}
               style={{ marginLeft: spacing.xs }}
             >
               <X size={14} color={colors.textMuted} />
             </Pressable>
           )}
           <Pressable
-            onPress={() => removeActionItem(item.id)}
+            accessibilityRole="button"
             accessibilityLabel="Remove action item"
+            hitSlop={14}
+            onPress={() => removeActionItem(item.id)}
             style={{ marginLeft: spacing.sm }}
           >
             <Trash2 size={16} color={colors.danger} />
@@ -314,19 +329,23 @@ export default function ReviewScreen({ navigation, route }: Props) {
         </View>
       ))}
       {Platform.OS === 'ios' && datePickerFor && (
-        <Pressable onPress={() => setDatePickerFor(null)} style={[styles.alignEnd, { marginTop: spacing.sm }]}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setDatePickerFor(null)}
+          style={[styles.alignEnd, { marginTop: spacing.sm }]}
+        >
           <Text style={{ color: colors.primary }}>Done</Text>
         </Pressable>
       )}
-      <Pressable onPress={addActionItem} style={{ marginTop: spacing.sm }}>
+      <Pressable accessibilityRole="button" onPress={addActionItem} style={{ marginTop: spacing.sm }}>
         <Text style={{ color: colors.primary }}>+ Add action item</Text>
       </Pressable>
 
       <View style={[styles.row, { marginTop: spacing.xl }]}>
-        <Pressable onPress={handleDiscard}>
+        <Pressable accessibilityRole="button" onPress={handleDiscard}>
           <Text style={{ color: colors.textMuted }}>Discard</Text>
         </Pressable>
-        <AnimatedPressable onPress={handleSave}>
+        <AnimatedPressable accessibilityRole="button" onPress={handleSave}>
           <Text style={[typography.body, styles.bold, { color: colors.primary }]}>Save</Text>
         </AnimatedPressable>
       </View>

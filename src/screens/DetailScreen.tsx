@@ -39,7 +39,9 @@ export default function DetailScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[typography.title, { color: colors.text }]}>{card.title}</Text>
+      <Text accessibilityRole="header" style={[typography.title, { color: colors.text }]}>
+        {card.title}
+      </Text>
       <Text style={[typography.caption, { color: colors.textMuted, marginTop: spacing.xs }]}>
         {new Date(card.createdAt).toLocaleDateString()}
       </Text>
@@ -60,10 +62,17 @@ export default function DetailScreen({ route, navigation }: Props) {
 
       {card.actionItems.length > 0 && (
         <View style={{ marginTop: spacing.lg }}>
-          <Text style={[typography.heading, { color: colors.text }]}>Action items</Text>
+          <Text accessibilityRole="header" style={[typography.heading, { color: colors.text }]}>
+            Action items
+          </Text>
           {card.actionItems.map(item => (
             <AnimatedPressable
               key={item.id}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: item.done }}
+              accessibilityLabel={[item.text, item.dueDate, item.notificationId ? 'reminder set' : null]
+                .filter(Boolean)
+                .join(', ')}
               onPress={() => handleToggleActionItem(item)}
               style={[styles.actionItemRow, { borderColor: colors.border, marginTop: spacing.sm }]}
             >
@@ -96,7 +105,12 @@ export default function DetailScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      <Pressable onPress={() => setTranscriptExpanded(prev => !prev)} style={{ marginTop: spacing.xl }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: transcriptExpanded }}
+        onPress={() => setTranscriptExpanded(prev => !prev)}
+        style={{ marginTop: spacing.xl }}
+      >
         <Text style={[typography.caption, { color: colors.primary }]}>
           {transcriptExpanded ? 'Hide' : 'Show'} raw transcript
         </Text>
@@ -105,7 +119,11 @@ export default function DetailScreen({ route, navigation }: Props) {
         <Text style={[typography.body, { color: colors.textMuted, marginTop: spacing.sm }]}>{card.rawTranscript}</Text>
       )}
 
-      <Pressable onPress={() => navigation.navigate('Review', { cardId: card.id })} style={{ marginTop: spacing.xl }}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => navigation.navigate('Review', { cardId: card.id })}
+        style={{ marginTop: spacing.xl }}
+      >
         <Text style={[typography.body, styles.bold, { color: colors.primary }]}>Edit</Text>
       </Pressable>
     </ScrollView>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { trigger as triggerHaptic } from 'react-native-haptic-feedback';
 import { Mic } from 'lucide-react-native';
@@ -24,6 +24,17 @@ export default function CaptureScreen({ navigation }: Props) {
   const setExtractionFailed = useCaptureStore(state => state.setExtractionFailed);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
+  // Press-and-hold is hard to discover and perform under VoiceOver/TalkBack
+  // (a screen reader's own single/double-tap gesture vocabulary doesn't
+  // include "hold"), so screen-reader users get a tap-to-start/tap-to-stop
+  // toggle on the same button instead — see native-module-transcription.md.
+  const [screenReaderEnabled, setScreenReaderEnabled] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isScreenReaderEnabled().then(setScreenReaderEnabled);
+    const subscription = AccessibilityInfo.addEventListener('screenReaderChanged', setScreenReaderEnabled);
+    return () => subscription.remove();
+  }, []);
+
   const levelShared = useSharedValue(0);
   useEffect(() => {
     levelShared.value = withTiming(status === 'recording' ? audioLevel : 0, { duration: 120 });
@@ -33,7 +44,7 @@ export default function CaptureScreen({ navigation }: Props) {
     transform: [{ scale: 1 + levelShared.value * 0.5 }],
   }));
 
-  const handlePressIn = async () => {
+  const beginRecording = async () => {
     setPermissionDenied(false);
     const permission = await requestPermissions();
     if (permission !== 'granted') {
@@ -44,7 +55,7 @@ export default function CaptureScreen({ navigation }: Props) {
     await start(language);
   };
 
-  const handlePressOut = async () => {
+  const endRecording = async () => {
     if (status !== 'recording') {
       return;
     }
@@ -64,6 +75,14 @@ export default function CaptureScreen({ navigation }: Props) {
     navigation.navigate('Review');
   };
 
+  const handleMicTap = () => {
+    if (status === 'recording') {
+      endRecording();
+    } else {
+      beginRecording();
+    }
+  };
+
   if (permissionDenied || error?.code === 'permission_denied') {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -72,7 +91,11 @@ export default function CaptureScreen({ navigation }: Props) {
           VoiceInk needs microphone and speech recognition access to record notes. Enable it in Settings to
           continue.
         </Text>
-        <Pressable onPress={() => Linking.openSettings()} style={{ marginTop: spacing.lg }}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => Linking.openSettings()}
+          style={{ marginTop: spacing.lg }}
+        >
           <Text style={{ color: colors.primary }}>Open Settings</Text>
         </Pressable>
       </View>
@@ -90,10 +113,12 @@ export default function CaptureScreen({ navigation }: Props) {
     );
   }
 
+  const idlePrompt = screenReaderEnabled ? 'Double-tap the mic to start talking' : 'Hold the mic and start talking';
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[typography.body, styles.subtitle, { color: colors.textMuted }]}>
-        {status === 'recording' ? partialTranscript || 'Listening…' : 'Hold the mic and start talking'}
+        {status === 'recording' ? partialTranscript || 'Listening…' : idlePrompt}
       </Text>
       <View style={[styles.micWrapper, { marginTop: spacing.xl }]}>
         <Animated.View
@@ -101,9 +126,14 @@ export default function CaptureScreen({ navigation }: Props) {
           style={[styles.micGlow, { backgroundColor: colors.danger }, glowStyle]}
         />
         <AnimatedPressable
-          accessibilityLabel="Hold to record"
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
+          accessibilityRole="button"
+          accessibilityLabel={
+            screenReaderEnabled ? (status === 'recording' ? 'Stop recording' : 'Start recording') : 'Hold to record'
+          }
+          accessibilityHint={screenReaderEnabled ? undefined : 'Press and hold to record, release to stop'}
+          {...(screenReaderEnabled
+            ? { onPress: handleMicTap }
+            : { onPressIn: beginRecording, onPressOut: endRecording })}
           style={[styles.micButton, { backgroundColor: status === 'recording' ? colors.danger : colors.primary }]}
         >
           <Mic size={36} color="#FFFFFF" />

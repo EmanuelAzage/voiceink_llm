@@ -34,9 +34,16 @@ export default function SettingsScreen(_props: Props) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, padding: spacing.lg }]}>
-      <Text style={[typography.body, { color: colors.text }]}>Recognition language</Text>
+      <Text accessibilityRole="header" style={[typography.body, { color: colors.text }]}>
+        Recognition language
+      </Text>
       <Text style={[typography.heading, { color: colors.primary, marginTop: spacing.xs }]}>{language}</Text>
-      <Pressable onPress={cycleLanguage} style={{ marginTop: spacing.md }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Change recognition language, currently ${language}`}
+        onPress={cycleLanguage}
+        style={{ marginTop: spacing.md }}
+      >
         <Text style={{ color: colors.primary }}>Change</Text>
       </Pressable>
       <Text style={[typography.caption, { color: colors.textMuted, marginTop: spacing.xl }]}>
@@ -48,6 +55,7 @@ export default function SettingsScreen(_props: Props) {
           {cardCount} card{cardCount === 1 ? '' : 's'} saved
         </Text>
         <Pressable
+          accessibilityRole="button"
           onPress={confirmDeleteAll}
           disabled={cardCount === 0}
           style={[{ marginTop: spacing.md }, cardCount === 0 && styles.disabled]}

@@ -39,7 +39,12 @@ function HomeHeaderRight() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Home'>>();
 
   return (
-    <Pressable onPress={() => navigation.navigate('Settings')} accessibilityLabel="Settings" hitSlop={8}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => navigation.navigate('Settings')}
+      accessibilityLabel="Settings"
+      hitSlop={13}
+    >
       <SettingsIcon size={22} color={colors.primary} />
     </Pressable>
   );

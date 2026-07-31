@@ -50,6 +50,21 @@ export default function HomeScreen({ navigation }: Props) {
   const renderCard = ({ item }: { item: Card }) => (
     <Swipeable renderRightActions={() => <DeleteAction color={colors.danger} />} onSwipeableOpen={() => handleDelete(item)}>
       <AnimatedPressable
+        accessibilityRole="button"
+        accessibilityLabel={[
+          item.title,
+          new Date(item.createdAt).toLocaleDateString(),
+          item.actionItems.length > 0
+            ? `${item.actionItems.length} action item${item.actionItems.length === 1 ? '' : 's'}`
+            : null,
+          item.tags.length > 0 ? `tags: ${item.tags.join(', ')}` : null,
+        ]
+          .filter(Boolean)
+          .join(', ')}
+        accessibilityActions={[{ name: 'delete', label: 'Delete' }]}
+        onAccessibilityAction={event => {
+          if (event.nativeEvent.actionName === 'delete') handleDelete(item);
+        }}
         onPress={() => navigation.navigate('Detail', { cardId: item.id })}
         style={[styles.cardRow, { borderColor: colors.border, backgroundColor: colors.background }]}
       >
@@ -78,7 +93,9 @@ export default function HomeScreen({ navigation }: Props) {
       {cards.length === 0 ? (
         <View style={styles.emptyState}>
           <NotebookPen size={40} color={colors.textMuted} style={{ marginBottom: spacing.md }} />
-          <Text style={[typography.heading, { color: colors.text }]}>No cards yet</Text>
+          <Text accessibilityRole="header" style={[typography.heading, { color: colors.text }]}>
+            No cards yet
+          </Text>
           <Text style={[typography.body, styles.subtitle, { color: colors.textMuted }]}>
             Hold the mic button and start talking — we'll turn it into a card.
           </Text>
@@ -96,7 +113,7 @@ export default function HomeScreen({ navigation }: Props) {
       {lastDeleted && (
         <View style={[styles.undoBar, { backgroundColor: colors.surface }]}>
           <Text style={[typography.body, { color: colors.text }]}>Card deleted</Text>
-          <Pressable onPress={handleUndo}>
+          <Pressable accessibilityRole="button" onPress={handleUndo}>
             <Text style={[typography.body, styles.bold, { color: colors.primary }]}>Undo</Text>
           </Pressable>
         </View>
@@ -107,6 +124,7 @@ export default function HomeScreen({ navigation }: Props) {
           Recognizing in {language}
         </Text>
         <AnimatedPressable
+          accessibilityRole="button"
           accessibilityLabel="Start recording"
           onPress={() => navigation.navigate('Capture')}
           style={[styles.micButton, { backgroundColor: colors.primary }]}
