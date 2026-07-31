@@ -4,7 +4,7 @@ title: VoiceInk Build Plan
 description: Milestone breakdown (M1-M6) with acceptance criteria for the two-day build
 status: living
 tags: [plan, milestones]
-timestamp: 2026-07-29T17:00:00Z
+timestamp: 2026-07-30T23:55:00Z
 related: [product-spec.md, native-module-transcription.md, log.md]
 ---
 
@@ -45,10 +45,14 @@ Work milestones top to bottom; each ends in a committed, compiling state on both
   **Android (Samsung SM-X230 tablet, real hardware):** full pipeline confirmed including live extraction against the real Gemini API; swipe-to-delete worked immediately with a real touch gesture (`adb shell input swipe`) — card removed, undo bar shown; notification scheduling confirmed concretely via `adb shell dumpsys jobscheduler` (a real WorkManager job with ~15h21m minimum latency landing at the 09:00-tomorrow target); notification cancellation on both delete and check-off confirmed the same way (job disappears from the dump); checkable items and the Edit→native-DatePickerDialog→Save round-trip all verified, including that edited state survives a true `am force-stop` + relaunch. Fixed a real deprecation along the way: `@react-native-community/datetimepicker`'s `onChange` prop is deprecated in this version in favor of `onValueChange`/`onDismiss`/`onNeutralButtonPress` — `ReviewScreen.tsx` migrated (caught by the user reading the on-device dev-mode warning banner, not by anything automated).
 
 ## M6 — Polish & portfolio
-- [ ] Settings (language, API key, delete-all); accessibility pass (labels, Dynamic Type, screen-reader toggle mode for mic).
+- [ ] Settings (language, delete-all); accessibility pass (labels, Dynamic Type, screen-reader toggle mode for mic).
 - [ ] Empty/error states reviewed; dark mode.
+- [ ] Icons (`lucide-react-native` + `react-native-svg`): checkboxes, tag/date remove affordances, AI badge, nav header, empty state.
+- [ ] Animated + haptic mic button — pulse/glow reactive to the Turbo Module's existing `onAudioLevel` stream (previously unused for visuals); haptic feedback on record start/stop, save, and delete.
+- [ ] Micro-interactions: press-scale animation on card rows/buttons via `react-native-reanimated` (already installed).
+- [x] Sentry (`@sentry/react-native`): crash reporting plus custom events for `extractCard`'s outcome (`timeout`/`network`/`invalid-response`/rate-limit-fallback-used), so extraction reliability is actually observable, not just handled. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [ ] README: fill the placeholder comments in the existing `README.md` — screenshots (iOS + Android, light + dark), verified setup instructions on a clean machine, `.env.example` committed.
-- [ ] Squash noisy WIP commits; public repo.
+- [x] Squash noisy WIP commits; public repo. ✅ already satisfied — history was already conventional-commit-clean with no WIP noise to squash (confirmed via `git log --oneline`), and the repo was already public (confirmed via `gh repo view`). No action needed for either.
 - **Accept:** a stranger can clone, add an API key, and run both platforms from README alone.
 
 ## Stretch (only if time remains)

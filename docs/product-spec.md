@@ -4,7 +4,7 @@ title: VoiceInk Product Spec
 description: Screens, user flows, and UX rules for the VoiceInk voice-notes app
 status: living
 tags: [spec, ux, screens]
-timestamp: 2026-07-21T20:10:00Z
+timestamp: 2026-07-30T23:50:00Z
 related: [architecture.md, build-plan.md]
 ---
 
@@ -23,8 +23,8 @@ One-line pitch: hold a button, ramble, release — get back a clean, structured,
 
 ### Home (card list)
 - Reverse-chronological list of saved cards (FlatList): title, date, tag chips, action-item count.
-- Prominent mic button (bottom center). Empty state invites first capture.
-- Tap card → Detail. Swipe → delete (with undo snackbar).
+- Prominent mic button (bottom center), pulses with live audio level while recording (M6). Empty state invites first capture with a simple icon, not text alone (M6).
+- Tap card → Detail. Swipe → delete (with undo snackbar); haptic feedback on delete (M6).
 
 ### Capture (modal over Home)
 - Opens on mic press. Shows recording indicator + streaming partial transcript.
@@ -33,19 +33,19 @@ One-line pitch: hold a button, ramble, release — get back a clean, structured,
 
 ### Review
 - Editable title, summary, tag chips (add/remove), action-item rows (text + optional date via native date picker).
-- AI-filled fields carry a subtle "AI" badge until touched.
-- Buttons: Save / Discard. Save schedules notifications for dated items.
+- AI-filled fields carry a subtle "AI" badge (icon, M6) until touched.
+- Buttons: Save / Discard. Save schedules notifications for dated items; haptic feedback on save (M6).
 
 ### Detail
-- Read view of a card; checkable action items (checking one cancels its pending notification). Edit reopens Review pre-filled. Shows original raw transcript in a collapsible section.
+- Read view of a card; checkable action items (icon checkbox, M6 — checking one cancels its pending notification, with a "Reminder set" status shown when a notification is actually scheduled). Edit reopens Review pre-filled. Shows original raw transcript in a collapsible section.
 
 ### Settings
 - Language for speech recognition (passed to the native module — no auto-detection assumed).
-- API key entry stored in MMKV (dev convenience; documented as not production practice).
 - "Delete all data."
 
 ## UX rules
 
+- Visual language (M6): `lucide-react-native` icons over plain text/color shapes where an icon reads faster than text (checkboxes, remove affordances, AI badge); light haptic feedback on record start/stop, save, and delete reinforces state changes without needing to look at the screen.
 - Review-before-save is non-negotiable; the AI proposes, the human disposes.
 - Offline behavior: capture and transcription work offline where the platform recognizer supports it; if the LLM call fails, offer raw-transcript save so no speech is ever lost.
 - Permissions are requested in context (first mic press), each with a pre-permission explainer line, and denial states are handled with a path to system settings.

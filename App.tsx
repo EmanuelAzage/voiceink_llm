@@ -1,7 +1,11 @@
+import * as Sentry from '@sentry/react-native';
 import { StatusBar, StyleSheet, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { RootNavigator } from '@/navigation/RootNavigator';
+import { initObservability } from '@/services/observability';
+
+initObservability();
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -20,4 +24,4 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
 });
 
-export default App;
+export default Sentry.wrap(App);

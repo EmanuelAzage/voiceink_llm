@@ -1,6 +1,7 @@
 import Config from 'react-native-config';
 import { cardJsonSchema, validateExtractedCard, type ExtractedCard } from './cardSchema';
 import { toLocalIsoDate } from './date';
+import { reportExtractionFailure, reportFallbackModelUsed } from './observability';
 
 const TIMEOUT_MS = 15000;
 const FUNCTION_NAME = 'extract_card';
@@ -139,12 +140,23 @@ export async function extractCard(transcript: string): Promise<ExtractionResult>
     return { status: 'error', reason: 'network' };
   }
 
-  for (const model of models) {
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
     const result = await extractWithModel(model, transcript, today);
-    if (result.status !== 'rate-limited') return result;
-    // rate-limited on this model — fall through and try the next one, if any
+
+    if (result.status === 'rate-limited') {
+      const nextModel = models[i + 1];
+      if (nextModel) reportFallbackModelUsed(model, nextModel);
+      continue;
+    }
+
+    if (result.status === 'error') {
+      reportExtractionFailure(result.reason, model);
+    }
+    return result;
   }
 
   // every configured model, including any fallback, was rate-limited
+  reportExtractionFailure('network', models[models.length - 1]);
   return { status: 'error', reason: 'network' };
 }
