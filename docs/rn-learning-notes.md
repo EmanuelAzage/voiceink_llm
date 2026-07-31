@@ -4,7 +4,7 @@ title: React Native Learning Notes
 description: Living doc of RN internals to understand while building — seeded with topics, filled in with notes as they come up in practice
 status: living
 tags: [learning, react-native, internals]
-timestamp: 2026-07-30T23:45:00Z
+timestamp: 2026-07-31T00:40:00Z
 related: [native-module-transcription.md, architecture.md]
 ---
 
@@ -255,6 +255,12 @@ Worth knowing which OS subsystem `scheduleActionItemNotification`'s `notifee.cre
 ## M5 (retrospective): native-stack's back button is a real platform difference, not just styling
 
 Noticed while screenshotting Detail↔Review during M5's Android pass: the back button reads differently per platform for the *exact same* navigation stack. iOS shows the **previous screen's title as the label** ("‹ Review" when the current screen is Detail) — a genuine `UINavigationController` convention, telling you what pressing it returns you to. Android shows a **bare "‹" arrow with no text** — Android's own back-affordance convention (the OS system back gesture/button already exists as the primary "go back" input; the in-app arrow is a secondary, label-free hint). Neither is a bug or a missed style prop — `native-stack` is intentionally rendering each platform's *real* native header chrome (the whole reason `native-stack` was picked over the JS-reimplemented `@react-navigation/stack`, per `decisions.md`), and real native headers render this differently by platform-native convention, full stop. Same lesson as the M4 date-picker note: a cross-platform library staying faithful to each platform's real primitives means visual differences aren't automatically defects — check what the *real* native app on that platform actually does before assuming a shared component should look identical everywhere.
+
+## M6: Driving a reanimated shared value from JS-thread state (not a gesture)
+
+The [Worklets](#m5-worklets--functions-that-actually-run-on-the-ui-thread-not-just-off-the-js-thread) note above covers reanimated values driven entirely on the UI thread by a gesture — no JS-thread involvement at all. The mic button's glow ring is the opposite case: `audioLevel` originates from a `NativeEventEmitter` event (`onAudioLevel`, from `useTranscription()`), which is genuinely **JS-thread** React state — every update re-renders `CaptureScreen`. Handing that number to a UI-thread `useAnimatedStyle` isn't automatic; a plain prop read inside `useAnimatedStyle` wouldn't update per-frame the way a shared value does. The bridge is a `useEffect` that watches `audioLevel` and writes into a `useSharedValue` on every change: `levelShared.value = withTiming(audioLevel, { duration: 120 })`. That assignment is what actually crosses threads — reanimated's shared values use the same JSI "shareable value" plumbing as TurboModules (per the earlier note), so writing `.value` from the JS thread propagates to the UI-thread copy without a bridge round-trip, and `withTiming` smooths out the ~10Hz native throttle into something that reads as continuous rather than jumpy. Net effect: JS-thread state still drives the animation, but the actual per-frame interpolation (`useAnimatedStyle`'s `scale`/`opacity` math) runs on the UI thread, so it doesn't glitch if the JS thread stalls mid-frame.
+
+**Native-dev framing:** closest analogue is a `CADisplayLink`- or `Combine`-driven UI update where the *source* value comes from a background-thread/delegate callback (here, a native event crossing into JS) but the actual view-property interpolation is scheduled to run on the main run loop regardless of what the source thread is doing — the write and the read/interpolate are deliberately decoupled across threads, not the same operation.
 
 ## Interview bridges (own-experience mapping)
 - Shared TS contract + Swift/Kotlin implementations ↔ shared-interface/native-implementation pattern from prior cross-platform work.

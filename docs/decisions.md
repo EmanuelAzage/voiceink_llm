@@ -4,13 +4,24 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-31T00:20:00Z
+timestamp: 2026-07-31T00:40:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-30 — Implemented the animated + haptic mic button
+Turned out the hard part was already done: `onAudioLevel { level }` (0–1, throttled to ≤10Hz) has been fully implemented natively on both platforms since M2/M3 — iOS computes RMS from the `AVAudioEngine` input tap's PCM buffer (`Transcription.swift`'s `processAudioLevel`), Android forwards `RecognitionListener.onRmsChanged` normalized into the same 0–1 range (`TranscriptionModule.kt`) — but nothing in JS ever consumed it for visuals, exactly as `native-module-transcription.md` had spec'd and `build-plan.md` called out. No native changes were needed for this task, only JS: `CaptureScreen.tsx`'s mic button gained an animated glow ring (`react-native-reanimated`, already installed) — a `useSharedValue` eased via `withTiming` toward `audioLevel` while `status === 'recording'` and back to 0 otherwise, driving the ring's scale and opacity. Verified live on the real Samsung SM-X230 tablet: the glow visibly grows and shrinks with real ambient audio level during an actual recording, not just a code-path check.
+
+Added `Mic` icons (lucide, already in use) to both Home's static and Capture's recording mic buttons — not explicitly on `build-plan.md`'s M6 icon list (that list predates this task), but the same "icon over plain color shape" pattern, and natural to add alongside the mic button work already in progress here.
+
+**Haptics — added `react-native-haptic-feedback` (v3.0.0), a new dependency, logged here per the guardrail.** Zero dependencies itself, ships a real Turbo Module (New Architecture — codegen'd `NativeHapticFeedback`) for both platforms, MIT-licensed, actively maintained. `trigger('impactLight')` called at all four points `product-spec.md` names — record start, record stop, Review's Save (both the AI-extraction and raw-transcript-fallback paths), and Home's swipe-delete — deliberately uniform (`impactLight` everywhere), matching the spec's literal "light haptic feedback... reinforces state changes" rather than inventing a differentiated-by-weight scheme nobody asked for.
+
+**Jest**: the library ships an official mock, but at `src/__mocks__/` *inside* the package (for its own test suite) rather than a public subpath — and that mock's own relative imports (`../utils/playHaptic` → `../hapticFeedback`) drag in the real, unmocked TurboModule anyway, so it throws under Jest regardless. Wrote a proper root `__mocks__/react-native-haptic-feedback.ts` instead (same convention as `react-native-config.ts`/`react-native-mmkv.ts`), stubbing only `trigger` — the one function this app actually calls.
+
+`pod install` run for iOS (`RNReactNativeHapticFeedback`, 89 total pods); Android autolinked with no extra steps, confirmed via a real build to the tablet.
 
 ## 2026-07-30 — Implemented icons: `lucide-react-native` + `react-native-svg`, per the M6 scope entry below
 Real icons replacing the plain-text/color-shape placeholders: `Square`/`CheckSquare` for Detail's action-item checkboxes (previously a colored `View`), `X` for tag-chip and date-clear remove affordances in Review (previously literal "×" glyphs), `Trash2` for the action-item remove button (previously a red "Remove" text link — not in the original M6 icon list but the same "remove affordance" category, so folded in), `Sparkles` for the AI badge (previously literal "AI" text), `NotebookPen` for Home's empty state, and a `Settings` gear replacing the header's "Settings" text link. `lucide-react-native` picked over `react-native-vector-icons` for the reasons already logged below (real SVG components, not a font glyph subset).

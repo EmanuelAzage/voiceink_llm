@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
+import { trigger as triggerHaptic } from 'react-native-haptic-feedback';
 import { Sparkles, Trash2, X } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
@@ -77,6 +78,7 @@ export default function ReviewScreen({ navigation, route }: Props) {
   };
 
   const handleSave = () => {
+    triggerHaptic('impactLight');
     const actionItemsPayload = actionItems
       .filter(item => item.text.trim())
       .map(item => ({ id: item.id, text: item.text.trim(), dueDate: item.dueDate, done: item.done ?? false }));
@@ -108,6 +110,7 @@ export default function ReviewScreen({ navigation, route }: Props) {
   };
 
   const handleSaveRaw = () => {
+    triggerHaptic('impactLight');
     const card: Card = {
       id: generateId(),
       createdAt: new Date().toISOString(),

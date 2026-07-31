@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { NotebookPen } from 'lucide-react-native';
+import { trigger as triggerHaptic } from 'react-native-haptic-feedback';
+import { Mic, NotebookPen } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -33,6 +34,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   const handleDelete = (card: Card) => {
     if (undoTimeout.current) clearTimeout(undoTimeout.current);
+    triggerHaptic('impactLight');
     deleteCard(card.id);
     setLastDeleted(card);
     undoTimeout.current = setTimeout(() => setLastDeleted(null), UNDO_WINDOW_MS);
@@ -107,7 +109,9 @@ export default function HomeScreen({ navigation }: Props) {
           accessibilityLabel="Start recording"
           onPress={() => navigation.navigate('Capture')}
           style={[styles.micButton, { backgroundColor: colors.primary }]}
-        />
+        >
+          <Mic size={30} color="#FFFFFF" />
+        </Pressable>
       </View>
     </View>
   );
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
   footer: { alignItems: 'center' },
   list: { flex: 1 },
   bold: { fontWeight: '600' },
-  micButton: { width: 72, height: 72, borderRadius: 36 },
+  micButton: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
   cardRow: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 12, paddingHorizontal: 4 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tagChip: { paddingHorizontal: 10, paddingVertical: 4 },
