@@ -4,13 +4,19 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-31T01:15:00Z
+timestamp: 2026-07-31T01:30:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-30 — Fixed: native-stack header stayed light in dark mode (`NavigationContainer` had no `theme`)
+Real, already-observed bug, not a hypothetical review finding — visible in Android screenshots taken earlier this session (the header bar stayed white while the screen body went dark). Root cause: `NavigationContainer` was never given a `theme` prop, so React Navigation's native-stack header chrome (background, text, border) falls back to its own built-in `DefaultTheme` (light) regardless of the OS color scheme — completely independent of this app's own `useTheme()`/`useColorScheme()` that every screen body already reads correctly. Fixed by building `lightNavTheme`/`darkNavTheme` (`RootNavigator.tsx`) from this app's own `colors.light`/`colors.dark` tokens — not React Navigation's generic default palette — spread over `DefaultTheme`/`DarkTheme` for the `fonts` shape v7's `Theme` type requires, then selecting one via `useTheme()`'s `scheme` and passing it to `<NavigationContainer theme={...}>`. Verified live: rebuilt and re-screenshotted the same screens (Home, Detail) on the real Samsung tablet — header now matches the dark body correctly; iOS light mode re-checked for no regression.
+
+## 2026-07-30 — Empty/error states: added icons for consistency with the M6 icons pass, verified live
+Home's empty state already got an icon in the earlier icons pass (`NotebookPen`); this pass extended the same "icon over plain text" treatment to the two states specifically named in `build-plan.md`'s M6 item — `CaptureScreen`'s permission-denied screen (`MicOff`) and `ReviewScreen`'s extraction-error screen (`CircleAlert`, `colors.danger`). Left `DetailScreen`'s "This card was deleted" and `ReviewScreen`'s "Nothing to review yet" as plain text — these are edge-case fallbacks (a card vanishing mid-session, landing on Review with no active capture), not the two states `build-plan.md` calls out, and not worth the same visual weight. Verified the permission-denied state live on iOS Simulator by actually revoking microphone access (`privacy_manager.py --revoke microphone`) and triggering it through the real UI, then re-granted it afterward — not just read from the code.
 
 ## 2026-07-30 — Accessibility pass: screen-reader mic toggle, labels/roles, touch targets; copied a reference guide from a sibling project
 Copied `docs/mobile-accessibility-engineering-guide.md` in from a sibling native iOS/Skip project at the developer's request — a WCAG 2.1/2.2 reference and audit checklist, kept largely as-is with a scope note at the top clarifying it's SwiftUI/Skip/government-VPAT-specific background reading, not a checklist applied verbatim to this RN app (see that doc's own scope note for what does and doesn't transfer). Used it to inform this pass's priorities (the three-assistive-technology mental model, touch-target minimums, the labels-vs-hints distinction) rather than following its checklist item-by-item.

@@ -1,5 +1,12 @@
 import { useEffect } from 'react';
-import { NavigationContainer, createNavigationContainerRef, useNavigation } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  NavigationContainer,
+  createNavigationContainerRef,
+  useNavigation,
+  type Theme,
+} from '@react-navigation/native';
 import { createNativeStackNavigator, type NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable } from 'react-native';
 import { Settings as SettingsIcon } from 'lucide-react-native';
@@ -10,10 +17,38 @@ import CaptureScreen from '@/screens/CaptureScreen';
 import ReviewScreen from '@/screens/ReviewScreen';
 import DetailScreen from '@/screens/DetailScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
-import { useTheme } from '@/theme';
+import { useTheme, colors as themeColors } from '@/theme';
 import { consumePendingDeepLinkCardId } from '@/services/notifications';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// React Navigation's own DefaultTheme/DarkTheme (light chrome regardless of
+// OS scheme unless a theme is explicitly passed) don't know about this app's
+// palette — without this, the native header stays light in dark mode while
+// every screen body (driven by useTheme()) goes dark. Built from our own
+// tokens so header chrome always matches the rest of the UI.
+const lightNavTheme: Theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: themeColors.light.primary,
+    background: themeColors.light.background,
+    card: themeColors.light.background,
+    text: themeColors.light.text,
+    border: themeColors.light.border,
+  },
+};
+const darkNavTheme: Theme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: themeColors.dark.primary,
+    background: themeColors.dark.background,
+    card: themeColors.dark.background,
+    text: themeColors.dark.text,
+    border: themeColors.dark.border,
+  },
+};
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
@@ -51,6 +86,8 @@ function HomeHeaderRight() {
 }
 
 export function RootNavigator() {
+  const { scheme } = useTheme();
+
   useEffect(() => {
     notifee.getInitialNotification().then(initial => {
       const cardId = initial?.notification.data?.cardId;
@@ -69,6 +106,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer
       ref={navigationRef}
+      theme={scheme === 'dark' ? darkNavTheme : lightNavTheme}
       onReady={() => {
         pendingNavigation?.();
         pendingNavigation = null;

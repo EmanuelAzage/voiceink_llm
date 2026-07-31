@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { trigger as triggerHaptic } from 'react-native-haptic-feedback';
-import { Mic } from 'lucide-react-native';
+import { Mic, MicOff } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -86,7 +86,10 @@ export default function CaptureScreen({ navigation }: Props) {
   if (permissionDenied || error?.code === 'permission_denied') {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[typography.heading, { color: colors.text }]}>Microphone access needed</Text>
+        <MicOff size={40} color={colors.textMuted} style={{ marginBottom: spacing.md }} />
+        <Text accessibilityRole="header" style={[typography.heading, { color: colors.text }]}>
+          Microphone access needed
+        </Text>
         <Text style={[typography.body, styles.subtitle, { color: colors.textMuted, marginTop: spacing.sm }]}>
           VoiceInk needs microphone and speech recognition access to record notes. Enable it in Settings to
           continue.

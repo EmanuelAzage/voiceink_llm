@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { trigger as triggerHaptic } from 'react-native-haptic-feedback';
-import { Sparkles, Trash2, X } from 'lucide-react-native';
+import { CircleAlert, Sparkles, Trash2, X } from 'lucide-react-native';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
@@ -180,6 +180,7 @@ export default function ReviewScreen({ navigation, route }: Props) {
   if (!existingCard && status === 'error') {
     return (
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+        <CircleAlert size={32} color={colors.danger} style={{ marginBottom: spacing.sm }} />
         <Text accessibilityRole="header" style={[typography.heading, { color: colors.text }]}>
           Couldn't structure this note
         </Text>

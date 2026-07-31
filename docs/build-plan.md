@@ -4,7 +4,7 @@ title: VoiceInk Build Plan
 description: Milestone breakdown (M1-M6) with acceptance criteria for the two-day build
 status: living
 tags: [plan, milestones]
-timestamp: 2026-07-31T01:15:00Z
+timestamp: 2026-07-31T01:30:00Z
 related: [product-spec.md, native-module-transcription.md, log.md]
 ---
 
@@ -47,7 +47,7 @@ Work milestones top to bottom; each ends in a committed, compiling state on both
 ## M6 — Polish & portfolio
 - [x] Settings: delete-all. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Accessibility pass (labels, Dynamic Type, screen-reader toggle mode for mic). ✅ 2026-07-30 — see [decisions.md](decisions.md)
-- [ ] Empty/error states reviewed; dark mode.
+- [x] Empty/error states reviewed; dark mode. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Icons (`lucide-react-native` + `react-native-svg`): checkboxes, tag/date remove affordances, AI badge, nav header, empty state. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Animated + haptic mic button — pulse/glow reactive to the Turbo Module's existing `onAudioLevel` stream (previously unused for visuals); haptic feedback on record start/stop, save, and delete. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Micro-interactions: press-scale animation on card rows/buttons via `react-native-reanimated` (already installed). ✅ 2026-07-30 — see [decisions.md](decisions.md)
