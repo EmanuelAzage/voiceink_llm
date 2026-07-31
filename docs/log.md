@@ -1,5 +1,9 @@
 # VoiceInk Update Log
 
+## 2026-07-31
+
+* **Update**: Added C4-style Mermaid diagrams to `architecture.md` (Context, Container, Component — the Turbo Module specifically), after evaluating and declining a full Structurizr-DSL + Docker + CI + AI-diff-patcher pipeline the user brought over from a different project's spec. Kept the C4 framing and Mermaid (renders natively on GitHub, no tooling); the "living diagram" property comes from the same doc-updated-in-the-same-commit discipline already applied to the rest of `docs/`, not a separate pipeline. See decisions.md.
+
 ## 2026-07-30
 
 * **Update**: Completed M6's last item — the README. Fixed two real inaccuracies in the setup prereqs (Node 20+ → 22.11+, matching `package.json`'s `engines`; Android SDK 35 → 36, matching `android/build.gradle`), added a troubleshooting section for issues actually hit this session (AAPT2 stale-daemon builds, pod install after new deps), and added real screenshots (`docs/screenshots/`) from both the iOS Simulator and the real Samsung tablet, light and dark. M1–M6 are now complete; README status line updated to match. See decisions.md.

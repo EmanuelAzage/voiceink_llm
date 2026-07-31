@@ -4,13 +4,22 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-31T01:45:00Z
+timestamp: 2026-07-31T02:00:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-31 — C4-style Mermaid diagrams in `architecture.md`, not a Structurizr/CI pipeline
+User brought a spec (written for a different, larger native-iOS/Skip.dev project) for an "Automated Living C4 Architecture Engine": Structurizr DSL as the source of truth, a CI job that runs Claude against every PR's `git diff` to patch the DSL, a Docker-based `structurizr/cli` validate/export step, Mermaid comments posted to PRs, and a compiled interactive static site deployed to GitHub Pages. Evaluated adopting it as-is for VoiceInk and decided against the infrastructure, while keeping the underlying idea.
+
+**Why not the full pipeline:** it solves documentation drift across many PRs from many people — a real problem on a team. VoiceInk doesn't have that problem: `docs/` is already updated in the same commit as every behavior change (CLAUDE.md mandates it, and this session's own history — every M6 task — is a live demonstration of it holding). Standing up Docker + a CI job + a second Claude API call whose only output is a diagram would be more moving parts than the app itself has native dependencies, and works against this repo's own stated goal of staying small and readable.
+
+**What was kept:** the C4 model's zoom-level framing (Context → Container → Component, explicitly labeled as such in `architecture.md` now) and Mermaid as the diagram format — it renders natively in GitHub markdown with zero added tooling, unlike Structurizr DSL which needs its own CLI/Docker just to preview. Added three diagrams: a Context diagram (VoiceInk plus its three external systems — platform speech recognition, Gemini, Sentry — each annotated with how the app degrades if that system is unavailable), a Container diagram (the existing ASCII layers diagram, converted), and a Component diagram of the Turbo Module specifically — the one piece of this codebase worth zooming into further, showing the codegen contract fanning out to the Swift and Kotlin implementations and both emitting the same three events back to `useTranscription()`.
+
+**The "living" property, kept without the CI machinery:** rather than a pipeline enforcing diagram freshness, the existing rule already covers it — update the relevant diagram in the same change as any structural change, same as every other file in `docs/`. Verified the new Mermaid blocks actually render (not just syntactically plausible) via a published Artifact preview before committing.
 
 ## 2026-07-30 — README: real screenshots, corrected prereqs, troubleshooting — the last M6 item
 Closed out M6's final checklist item. Three things, in order of how much they actually mattered:
