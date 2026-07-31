@@ -4,7 +4,7 @@ title: VoiceInk Architecture
 description: Layers, data flow, state management, persistence, and project structure
 status: living
 tags: [architecture, state, persistence, structure]
-timestamp: 2026-07-30T23:55:00Z
+timestamp: 2026-07-31T00:55:00Z
 related: [native-module-transcription.md, product-spec.md, decisions.md]
 ---
 
@@ -64,7 +64,7 @@ interface Card {
 /modules/transcription/{index.ts, NativeTranscription.ts, ios/, android/}
 /src
   /screens: Home, Capture, Review, Detail, Settings
-  /components: CardRow, TagChips, ActionItemRow, MicButton, AIBadge
+  /components: AnimatedPressable.tsx (press-scale wrapper, M6)
   /state: cardStore.ts, captureStore.ts, settingsStore.ts
   /services: extraction.ts, cardSchema.ts, notifications.ts, storage.ts
   /theme: colors.ts, typography.ts, spacing.ts

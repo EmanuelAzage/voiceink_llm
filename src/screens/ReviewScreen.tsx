@@ -3,6 +3,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import DateTimePicker, { type DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { trigger as triggerHaptic } from 'react-native-haptic-feedback';
 import { Sparkles, Trash2, X } from 'lucide-react-native';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -189,9 +190,9 @@ export default function ReviewScreen({ navigation, route }: Props) {
           <Pressable onPress={finishAndGoHome}>
             <Text style={{ color: colors.textMuted }}>Discard</Text>
           </Pressable>
-          <Pressable onPress={handleSaveRaw}>
+          <AnimatedPressable onPress={handleSaveRaw}>
             <Text style={[typography.body, styles.bold, { color: colors.primary }]}>Save transcript</Text>
-          </Pressable>
+          </AnimatedPressable>
         </View>
       </ScrollView>
     );
@@ -325,9 +326,9 @@ export default function ReviewScreen({ navigation, route }: Props) {
         <Pressable onPress={handleDiscard}>
           <Text style={{ color: colors.textMuted }}>Discard</Text>
         </Pressable>
-        <Pressable onPress={handleSave}>
+        <AnimatedPressable onPress={handleSave}>
           <Text style={[typography.body, styles.bold, { color: colors.primary }]}>Save</Text>
-        </Pressable>
+        </AnimatedPressable>
       </View>
     </ScrollView>
   );

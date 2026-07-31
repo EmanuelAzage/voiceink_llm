@@ -4,13 +4,20 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-31T00:40:00Z
+timestamp: 2026-07-31T00:55:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-30 — Implemented press-scale micro-interactions: a shared `AnimatedPressable`, applied selectively
+First real file in `src/components/` — `architecture.md`'s project-structure listing had named `CardRow`/`TagChips`/`ActionItemRow`/`MicButton`/`AIBadge` as if they were already extracted there since early planning, but none ever were; everything stayed inline in screens. Corrected that listing to match reality instead of leaving a second stale aspirational list around.
+
+`AnimatedPressable` (`src/components/AnimatedPressable.tsx`) wraps `Pressable` with a reanimated `useSharedValue`/`useAnimatedStyle` scale-to-0.96-on-press-in, back-to-1-on-press-out — a real shared component, not a premature abstraction, since the exact same interaction repeats across every screen once applied. Composes with existing `onPressIn`/`onPressOut` handlers (needed for `CaptureScreen`'s async record-start/stop logic) rather than replacing them.
+
+**Scope, deliberately not exhaustive**: applied to Home's card rows (the literal "cards" in `build-plan.md`'s wording) and both mic buttons, plus the primary CTA on each of Review (`Save`/`Save transcript`) and Detail (its action-item rows, the same card-row pattern as Home). Deliberately *not* applied to secondary text links (`Discard`, `Cancel`, `Add tag`, tag/date remove icons, `Edit`, `Change` language) — animating every small inline link would read as gimmicky rather than "micro," and the spec's literal wording is "cards/buttons," not "every tap target." Verified functionally on the real Samsung SM-X230 tablet (card row tap still navigates correctly, swipe-to-delete still works, nothing crashed) — the scale-down itself is too fast (~80ms) to reliably catch in a static screenshot, so this relied on the same reanimated `useSharedValue`/`useAnimatedStyle` recipe already proven moments earlier for the mic glow ring, not a fresh unverified pattern.
 
 ## 2026-07-30 — Implemented the animated + haptic mic button
 Turned out the hard part was already done: `onAudioLevel { level }` (0–1, throttled to ≤10Hz) has been fully implemented natively on both platforms since M2/M3 — iOS computes RMS from the `AVAudioEngine` input tap's PCM buffer (`Transcription.swift`'s `processAudioLevel`), Android forwards `RecognitionListener.onRmsChanged` normalized into the same 0–1 range (`TranscriptionModule.kt`) — but nothing in JS ever consumed it for visuals, exactly as `native-module-transcription.md` had spec'd and `build-plan.md` called out. No native changes were needed for this task, only JS: `CaptureScreen.tsx`'s mic button gained an animated glow ring (`react-native-reanimated`, already installed) — a `useSharedValue` eased via `withTiming` toward `audioLevel` while `status === 'recording'` and back to 0 otherwise, driving the ring's scale and opacity. Verified live on the real Samsung SM-X230 tablet: the glow visibly grows and shrinks with real ambient audio level during an actual recording, not just a code-path check.

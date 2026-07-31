@@ -8,6 +8,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 import { useSettingsStore } from '@/state/settingsStore';
 import { useCardStore, type Card } from '@/state/cardStore';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -48,7 +49,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   const renderCard = ({ item }: { item: Card }) => (
     <Swipeable renderRightActions={() => <DeleteAction color={colors.danger} />} onSwipeableOpen={() => handleDelete(item)}>
-      <Pressable
+      <AnimatedPressable
         onPress={() => navigation.navigate('Detail', { cardId: item.id })}
         style={[styles.cardRow, { borderColor: colors.border, backgroundColor: colors.background }]}
       >
@@ -68,7 +69,7 @@ export default function HomeScreen({ navigation }: Props) {
             ))}
           </View>
         )}
-      </Pressable>
+      </AnimatedPressable>
     </Swipeable>
   );
 
@@ -105,13 +106,13 @@ export default function HomeScreen({ navigation }: Props) {
         <Text style={[typography.caption, { color: colors.textMuted, marginBottom: spacing.md }]}>
           Recognizing in {language}
         </Text>
-        <Pressable
+        <AnimatedPressable
           accessibilityLabel="Start recording"
           onPress={() => navigation.navigate('Capture')}
           style={[styles.micButton, { backgroundColor: colors.primary }]}
         >
           <Mic size={30} color="#FFFFFF" />
-        </Pressable>
+        </AnimatedPressable>
       </View>
     </View>
   );

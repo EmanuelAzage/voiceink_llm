@@ -6,6 +6,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 import { useCardStore, type ActionItem } from '@/state/cardStore';
 import { isFutureDueDate } from '@/services/notifications';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Detail'>;
 
@@ -61,7 +62,7 @@ export default function DetailScreen({ route, navigation }: Props) {
         <View style={{ marginTop: spacing.lg }}>
           <Text style={[typography.heading, { color: colors.text }]}>Action items</Text>
           {card.actionItems.map(item => (
-            <Pressable
+            <AnimatedPressable
               key={item.id}
               onPress={() => handleToggleActionItem(item)}
               style={[styles.actionItemRow, { borderColor: colors.border, marginTop: spacing.sm }]}
@@ -90,7 +91,7 @@ export default function DetailScreen({ route, navigation }: Props) {
                   </Text>
                 )}
               </View>
-            </Pressable>
+            </AnimatedPressable>
           ))}
         </View>
       )}

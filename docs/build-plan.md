@@ -4,7 +4,7 @@ title: VoiceInk Build Plan
 description: Milestone breakdown (M1-M6) with acceptance criteria for the two-day build
 status: living
 tags: [plan, milestones]
-timestamp: 2026-07-31T00:40:00Z
+timestamp: 2026-07-31T00:55:00Z
 related: [product-spec.md, native-module-transcription.md, log.md]
 ---
 
@@ -50,7 +50,7 @@ Work milestones top to bottom; each ends in a committed, compiling state on both
 - [ ] Empty/error states reviewed; dark mode.
 - [x] Icons (`lucide-react-native` + `react-native-svg`): checkboxes, tag/date remove affordances, AI badge, nav header, empty state. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Animated + haptic mic button — pulse/glow reactive to the Turbo Module's existing `onAudioLevel` stream (previously unused for visuals); haptic feedback on record start/stop, save, and delete. ✅ 2026-07-30 — see [decisions.md](decisions.md)
-- [ ] Micro-interactions: press-scale animation on card rows/buttons via `react-native-reanimated` (already installed).
+- [x] Micro-interactions: press-scale animation on card rows/buttons via `react-native-reanimated` (already installed). ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [x] Sentry (`@sentry/react-native`): crash reporting plus custom events for `extractCard`'s outcome (`timeout`/`network`/`invalid-response`/rate-limit-fallback-used), so extraction reliability is actually observable, not just handled. ✅ 2026-07-30 — see [decisions.md](decisions.md)
 - [ ] README: fill the placeholder comments in the existing `README.md` — screenshots (iOS + Android, light + dark), verified setup instructions on a clean machine, `.env.example` committed.
 - [x] Squash noisy WIP commits; public repo. ✅ already satisfied — history was already conventional-commit-clean with no WIP noise to squash (confirmed via `git log --oneline`), and the repo was already public (confirmed via `gh repo view`). No action needed for either.

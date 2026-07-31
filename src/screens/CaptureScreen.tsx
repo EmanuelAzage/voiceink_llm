@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/state/settingsStore';
 import { useCaptureStore } from '@/state/captureStore';
 import { extractCard } from '@/services/extraction';
 import { useTranscription } from '@modules/transcription';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Capture'>;
 
@@ -99,14 +100,14 @@ export default function CaptureScreen({ navigation }: Props) {
           pointerEvents="none"
           style={[styles.micGlow, { backgroundColor: colors.danger }, glowStyle]}
         />
-        <Pressable
+        <AnimatedPressable
           accessibilityLabel="Hold to record"
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           style={[styles.micButton, { backgroundColor: status === 'recording' ? colors.danger : colors.primary }]}
         >
           <Mic size={36} color="#FFFFFF" />
-        </Pressable>
+        </AnimatedPressable>
       </View>
     </View>
   );
