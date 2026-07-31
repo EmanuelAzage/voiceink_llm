@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CheckSquare, Square } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -65,12 +66,13 @@ export default function DetailScreen({ route, navigation }: Props) {
               onPress={() => handleToggleActionItem(item)}
               style={[styles.actionItemRow, { borderColor: colors.border, marginTop: spacing.sm }]}
             >
-              <View
-                style={[
-                  styles.checkbox,
-                  { borderColor: colors.primary, backgroundColor: item.done ? colors.primary : colors.background },
-                ]}
-              />
+              <View style={styles.checkbox}>
+                {item.done ? (
+                  <CheckSquare size={20} color={colors.primary} />
+                ) : (
+                  <Square size={20} color={colors.primary} />
+                )}
+              </View>
               <View style={styles.flexOne}>
                 <Text
                   style={[
@@ -118,5 +120,5 @@ const styles = StyleSheet.create({
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tagChip: { paddingHorizontal: 10, paddingVertical: 4 },
   actionItemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 8 },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, marginTop: 2 },
+  checkbox: { marginTop: 2 },
 });

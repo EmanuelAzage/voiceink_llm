@@ -4,13 +4,20 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-31T00:05:00Z
+timestamp: 2026-07-31T00:20:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-30 — Implemented icons: `lucide-react-native` + `react-native-svg`, per the M6 scope entry below
+Real icons replacing the plain-text/color-shape placeholders: `Square`/`CheckSquare` for Detail's action-item checkboxes (previously a colored `View`), `X` for tag-chip and date-clear remove affordances in Review (previously literal "×" glyphs), `Trash2` for the action-item remove button (previously a red "Remove" text link — not in the original M6 icon list but the same "remove affordance" category, so folded in), `Sparkles` for the AI badge (previously literal "AI" text), `NotebookPen` for Home's empty state, and a `Settings` gear replacing the header's "Settings" text link. `lucide-react-native` picked over `react-native-vector-icons` for the reasons already logged below (real SVG components, not a font glyph subset).
+
+**Jest**: same class of problem as `@sentry/react-native` above but a different root cause and a different fix. `lucide-react-native`'s package.json `exports` map has a `"react-native"` condition Jest's resolver honors ahead of `"require"`, pointing at its ESM build (`dist/esm/lucide-react-native.mjs`) — but the RN Jest preset's `transform` config only matches `.js/.ts/.tsx`, never `.mjs`, so that file is never transformed and Jest chokes on its raw `export` syntax regardless of `transformIgnorePatterns` (which only controls whether a matched file is transformed, not whether Jest's resolver picks a `.mjs` file to begin with). A manual `__mocks__/` stub wasn't practical here — unlike Sentry's 3-function surface, this app uses 8 different icon components already and more will be added as the icon pass continues, so hand-mocking every one is the wrong shape of fix. Instead, `jest.config.js`'s `moduleNameMapper` routes `lucide-react-native` straight at its own real CJS build (`dist/cjs/lucide-react-native.js`) — genuine working CommonJS already shipped in the package, no mock needed, same "point straight at the compiled output" pattern already used for `react-native-worklets`.
+
+Verified live: iOS Simulator (Settings gear icon, empty-state `NotebookPen`) and the real Samsung SM-X230 tablet using its existing saved cards (Detail's `Square`/`CheckSquare` checkbox toggling correctly, Review's tag/date `X` and action-item `Trash2` remove buttons). `pod install` run for iOS (`RNSVG`, 88 total pods); Android needed nothing extra beyond autolinking (confirmed via a real build to the tablet, after killing a stale Gradle daemon — same transient AAPT2 startup failure noted in M5's build-plan.md, same fix).
 
 ## 2026-07-30 — Settings "Delete all data" scoped to cards only, not the language preference
 `cardStore.ts` gained `deleteAllCards()` — cancels every card's scheduled notifications the same way `deleteCard` does (per-item, via `notificationId`), then clears `cards`. Deliberately left `useSettingsStore`'s `language` untouched: "delete all data" reads to a user as "erase my saved content," not "reset my preferences" — a language reset is an unrelated, surprising side effect a user asking to delete their cards wouldn't expect or want. Confirmation via `Alert.alert` (`destructive` style, matching the existing uncheck-reschedule pattern), disabled when there's nothing to delete. Verified live on iOS Simulator: confirm dialog shows the real card count, count drops to 0 and the button disables after confirming.

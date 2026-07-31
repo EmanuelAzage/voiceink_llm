@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { NavigationContainer, createNavigationContainerRef, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator, type NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
+import { Settings as SettingsIcon } from 'lucide-react-native';
 import notifee, { EventType } from '@notifee/react-native';
 import type { RootStackParamList } from './types';
 import HomeScreen from '@/screens/HomeScreen';
@@ -38,8 +39,8 @@ function HomeHeaderRight() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Home'>>();
 
   return (
-    <Pressable onPress={() => navigation.navigate('Settings')} hitSlop={8}>
-      <Text style={{ color: colors.primary }}>Settings</Text>
+    <Pressable onPress={() => navigation.navigate('Settings')} accessibilityLabel="Settings" hitSlop={8}>
+      <SettingsIcon size={22} color={colors.primary} />
     </Pressable>
   );
 }

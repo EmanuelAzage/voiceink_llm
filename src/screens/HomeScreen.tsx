@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { NotebookPen } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -73,6 +74,7 @@ export default function HomeScreen({ navigation }: Props) {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {cards.length === 0 ? (
         <View style={styles.emptyState}>
+          <NotebookPen size={40} color={colors.textMuted} style={{ marginBottom: spacing.md }} />
           <Text style={[typography.heading, { color: colors.text }]}>No cards yet</Text>
           <Text style={[typography.body, styles.subtitle, { color: colors.textMuted }]}>
             Hold the mic button and start talking — we'll turn it into a card.

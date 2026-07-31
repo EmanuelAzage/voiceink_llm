@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
+import { Sparkles, Trash2, X } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
@@ -32,7 +33,7 @@ function fromIsoDate(iso: string): Date {
 
 function AIBadge({ show, color }: { show: boolean; color: string }) {
   if (!show) return null;
-  return <Text style={[styles.aiBadge, { color }]}>AI</Text>;
+  return <Sparkles size={14} color={color} accessibilityLabel="AI-filled" />;
 }
 
 export default function ReviewScreen({ navigation, route }: Props) {
@@ -242,9 +243,10 @@ export default function ReviewScreen({ navigation, route }: Props) {
           <Pressable
             key={tag}
             onPress={() => removeTag(tag)}
-            style={[styles.tagChip, { backgroundColor: colors.surface, borderRadius: radii.pill }]}
+            style={[styles.tagChip, styles.tagChipRow, { backgroundColor: colors.surface, borderRadius: radii.pill }]}
           >
-            <Text style={[typography.caption, { color: colors.text }]}>{tag} ×</Text>
+            <Text style={[typography.caption, { color: colors.text }]}>{tag}</Text>
+            <X size={12} color={colors.textMuted} />
           </Pressable>
         ))}
       </View>
@@ -281,12 +283,20 @@ export default function ReviewScreen({ navigation, route }: Props) {
             <Text style={[typography.caption, { color: colors.primary }]}>{item.dueDate ?? 'Set date'}</Text>
           </Pressable>
           {item.dueDate && (
-            <Pressable onPress={() => clearActionItemDate(item.id)} style={{ marginLeft: spacing.xs }}>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>×</Text>
+            <Pressable
+              onPress={() => clearActionItemDate(item.id)}
+              accessibilityLabel="Clear date"
+              style={{ marginLeft: spacing.xs }}
+            >
+              <X size={14} color={colors.textMuted} />
             </Pressable>
           )}
-          <Pressable onPress={() => removeActionItem(item.id)} style={{ marginLeft: spacing.sm }}>
-            <Text style={[typography.body, { color: colors.danger }]}>Remove</Text>
+          <Pressable
+            onPress={() => removeActionItem(item.id)}
+            accessibilityLabel="Remove action item"
+            style={{ marginLeft: spacing.sm }}
+          >
+            <Trash2 size={16} color={colors.danger} />
           </Pressable>
           {datePickerFor === item.id && (
             <DateTimePicker
@@ -329,9 +339,9 @@ const styles = StyleSheet.create({
   multiline: { minHeight: 60, textAlignVertical: 'top' },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tagChip: { paddingHorizontal: 12, paddingVertical: 6 },
+  tagChipRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tagInput: { flex: 1 },
   actionItemRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 8 },
-  aiBadge: { fontSize: 11, fontWeight: '700' },
   bold: { fontWeight: '600' },
   flexInput: { flex: 1 },
   alignEnd: { alignSelf: 'flex-end' },

@@ -21,5 +21,12 @@ module.exports = {
     // compiled output.
     '^react-native-reanimated$': 'react-native-reanimated/mock',
     '^react-native-worklets$': '<rootDir>/node_modules/react-native-worklets/lib/module/mock.js',
+    // lucide-react-native's package.json "exports" map has a "react-native"
+    // condition Jest's resolver honors, pointing at its ESM build — but the
+    // RN jest preset's babel transform only matches .js/.ts/.tsx, never
+    // .mjs, so that file is never transformed and its raw `export` syntax
+    // fails to parse. Route straight to the CJS build instead (already
+    // real, working CommonJS — no mock needed).
+    '^lucide-react-native$': '<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js',
   },
 };
