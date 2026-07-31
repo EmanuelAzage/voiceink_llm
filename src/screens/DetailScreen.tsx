@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
-import { useCardStore } from '@/state/cardStore';
+import { useCardStore, type ActionItem } from '@/state/cardStore';
+import { isFutureDueDate } from '@/services/notifications';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Detail'>;
 
@@ -11,6 +12,7 @@ export default function DetailScreen({ route, navigation }: Props) {
   const { colors, typography, spacing, radii } = useTheme();
   const card = useCardStore(state => state.cards.find(c => c.id === route.params.cardId));
   const toggleActionItemDone = useCardStore(state => state.toggleActionItemDone);
+  const rescheduleActionItemNotification = useCardStore(state => state.rescheduleActionItemNotification);
   const [transcriptExpanded, setTranscriptExpanded] = useState(false);
 
   if (!card) {
@@ -20,6 +22,18 @@ export default function DetailScreen({ route, navigation }: Props) {
       </View>
     );
   }
+
+  const handleToggleActionItem = (item: ActionItem) => {
+    const wasDone = item.done;
+    toggleActionItemDone(card.id, item.id);
+
+    if (wasDone && item.dueDate && isFutureDueDate(item.dueDate)) {
+      Alert.alert('Set a reminder?', `We can notify you on ${item.dueDate} for "${item.text}".`, [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Remind me', onPress: () => rescheduleActionItemNotification(card.id, item.id) },
+      ]);
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
@@ -48,7 +62,7 @@ export default function DetailScreen({ route, navigation }: Props) {
           {card.actionItems.map(item => (
             <Pressable
               key={item.id}
-              onPress={() => toggleActionItemDone(card.id, item.id)}
+              onPress={() => handleToggleActionItem(item)}
               style={[styles.actionItemRow, { borderColor: colors.border, marginTop: spacing.sm }]}
             >
               <View
@@ -68,7 +82,10 @@ export default function DetailScreen({ route, navigation }: Props) {
                   {item.text}
                 </Text>
                 {item.dueDate && (
-                  <Text style={[typography.caption, { color: colors.textMuted }]}>{item.dueDate}</Text>
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                    {item.dueDate}
+                    {item.notificationId ? ' · Reminder set' : ''}
+                  </Text>
                 )}
               </View>
             </Pressable>

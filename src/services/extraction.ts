@@ -1,5 +1,6 @@
 import Config from 'react-native-config';
 import { cardJsonSchema, validateExtractedCard, type ExtractedCard } from './cardSchema';
+import { toLocalIsoDate } from './date';
 
 const TIMEOUT_MS = 15000;
 const FUNCTION_NAME = 'extract_card';
@@ -81,7 +82,7 @@ async function callGemini(transcript: string, today: string, retryHint?: string)
 }
 
 export async function extractCard(transcript: string): Promise<ExtractionResult> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalIsoDate(new Date());
   let retryHint: string | undefined;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {

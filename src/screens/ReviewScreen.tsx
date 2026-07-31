@@ -6,6 +6,7 @@ import type { RootStackParamList } from '@/navigation/types';
 import { useTheme } from '@/theme';
 import { useCaptureStore, type ExtractionErrorReason } from '@/state/captureStore';
 import { useCardStore, generateId, type Card } from '@/state/cardStore';
+import { toLocalIsoDate } from '@/services/date';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Review'>;
 
@@ -22,13 +23,6 @@ interface EditableActionItem {
   text: string;
   dueDate?: string; // ISO-8601 (YYYY-MM-DD)
   done?: boolean;
-}
-
-function toIsoDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 function fromIsoDate(iso: string): Date {
@@ -151,7 +145,7 @@ export default function ReviewScreen({ navigation, route }: Props) {
   };
 
   const updateActionItemDate = (id: string, date: Date) => {
-    setActionItems(prev => prev.map(item => (item.id === id ? { ...item, dueDate: toIsoDate(date) } : item)));
+    setActionItems(prev => prev.map(item => (item.id === id ? { ...item, dueDate: toLocalIsoDate(date) } : item)));
     setTouched(prev => ({ ...prev, actionItems: true }));
   };
 

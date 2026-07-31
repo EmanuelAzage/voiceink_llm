@@ -22,6 +22,11 @@ function triggerDateFor(dueDate: string): Date {
   return new Date(year, month - 1, day, 9, 0, 0);
 }
 
+/** Whether `dueDate` (at its 09:00 local trigger time) is still ahead of now. */
+export function isFutureDueDate(dueDate: string): boolean {
+  return triggerDateFor(dueDate).getTime() > Date.now();
+}
+
 /**
  * Schedules a local notification for one action item, keyed by the item's own
  * id (so cancelling later needs no extra bookkeeping — see cardStore.ts).

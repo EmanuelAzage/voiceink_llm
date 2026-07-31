@@ -32,29 +32,32 @@ interface CardState {
   updateCard: (card: Card) => void;
   deleteCard: (id: string) => void;
   toggleActionItemDone: (cardId: string, itemId: string) => void;
+  rescheduleActionItemNotification: (cardId: string, itemId: string) => void;
 }
 
 export const useCardStore = create<CardState>()(
   persist(
     (set, get) => {
-      // Schedules a notification for each dated, not-yet-done action item on
-      // `card`, then patches its `notificationId` once scheduling resolves —
-      // scheduling is async (it may prompt for permission), so this can't
-      // happen synchronously inside the add/update call itself.
+      // Schedules one item's notification, then patches its `notificationId`
+      // once scheduling resolves — scheduling is async (it may prompt for
+      // permission), so this can't happen synchronously inside the caller.
+      const scheduleOne = (card: Card, item: ActionItem) => {
+        scheduleActionItemNotification(card, item).then(scheduled => {
+          if (!scheduled) return;
+          set(state => ({
+            cards: state.cards.map(c =>
+              c.id !== card.id
+                ? c
+                : { ...c, actionItems: c.actionItems.map(i => (i.id === item.id ? { ...i, notificationId: item.id } : i)) },
+            ),
+          }));
+        });
+      };
+
+      // Schedules every dated, not-yet-done action item on `card`.
       const scheduleAndPatch = (card: Card) => {
         card.actionItems.forEach(item => {
-          if (item.dueDate && !item.done) {
-            scheduleActionItemNotification(card, item).then(scheduled => {
-              if (!scheduled) return;
-              set(state => ({
-                cards: state.cards.map(c =>
-                  c.id !== card.id
-                    ? c
-                    : { ...c, actionItems: c.actionItems.map(i => (i.id === item.id ? { ...i, notificationId: item.id } : i)) },
-                ),
-              }));
-            });
-          }
+          if (item.dueDate && !item.done) scheduleOne(card, item);
         });
       };
 
@@ -105,6 +108,13 @@ export const useCardStore = create<CardState>()(
                   },
             ),
           }));
+        },
+
+        rescheduleActionItemNotification: (cardId, itemId) => {
+          const card = get().cards.find(c => c.id === cardId);
+          const item = card?.actionItems.find(i => i.id === itemId);
+          if (!card || !item || !item.dueDate) return;
+          scheduleOne(card, item);
         },
       };
     },
