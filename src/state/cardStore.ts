@@ -31,6 +31,7 @@ interface CardState {
   addCard: (card: Card) => void;
   updateCard: (card: Card) => void;
   deleteCard: (id: string) => void;
+  deleteAllCards: () => void;
   toggleActionItemDone: (cardId: string, itemId: string) => void;
   rescheduleActionItemNotification: (cardId: string, itemId: string) => void;
 }
@@ -84,6 +85,15 @@ export const useCardStore = create<CardState>()(
             if (item.notificationId) cancelActionItemNotification(item.notificationId);
           });
           set(state => ({ cards: state.cards.filter(c => c.id !== id) }));
+        },
+
+        deleteAllCards: () => {
+          get().cards.forEach(card => {
+            card.actionItems.forEach(item => {
+              if (item.notificationId) cancelActionItemNotification(item.notificationId);
+            });
+          });
+          set({ cards: [] });
         },
 
         toggleActionItemDone: (cardId, itemId) => {

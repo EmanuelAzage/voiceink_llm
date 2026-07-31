@@ -4,13 +4,16 @@ title: VoiceInk Decisions
 description: ADR-lite log of technical choices and their rationale
 status: living
 tags: [decisions, adr, dependencies]
-timestamp: 2026-07-30T23:55:00Z
+timestamp: 2026-07-31T00:05:00Z
 related: [architecture.md]
 ---
 
 # Decisions
 
 Add a dated entry for every non-obvious choice. Newest first.
+
+## 2026-07-30 — Settings "Delete all data" scoped to cards only, not the language preference
+`cardStore.ts` gained `deleteAllCards()` — cancels every card's scheduled notifications the same way `deleteCard` does (per-item, via `notificationId`), then clears `cards`. Deliberately left `useSettingsStore`'s `language` untouched: "delete all data" reads to a user as "erase my saved content," not "reset my preferences" — a language reset is an unrelated, surprising side effect a user asking to delete their cards wouldn't expect or want. Confirmation via `Alert.alert` (`destructive` style, matching the existing uncheck-reschedule pattern), disabled when there's nothing to delete. Verified live on iOS Simulator: confirm dialog shows the real card count, count drops to 0 and the button disables after confirming.
 
 ## 2026-07-30 — Implemented Sentry (`@sentry/react-native` 8.21.0): manual setup, not the wizard
 Followed up the M6-scope entry below with the actual implementation once a real DSN was available (Sentry dashboard, React Native platform). Sentry's dashboard recommends `npx @sentry/wizard@latest -i reactNative --saas --org ... --project ...`, but declined it: it's an interactive CLI prompting for choices, and every other native dependency this session (notifee, gesture-handler, reanimated, react-native-config, datetimepicker) was set up by hand with each step understood rather than delegated to a generator — the wizard would also auto-edit `App.tsx`, `ios/`, `android/`, and `metro.config.js` in ways not reviewed line-by-line first. Did it manually instead:
