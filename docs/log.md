@@ -2,6 +2,7 @@
 
 ## 2026-07-31
 
+* **Update**: Removed `docs/mobile-accessibility-engineering-guide.md` (the WCAG reference copied in from a sibling project during the M6 accessibility pass) and purged it from git history — it contained proprietary material from the developer's employer that shouldn't have been committed to this public repo. `index.md`'s entry for it removed; the accessibility-pass log entry and decisions.md rationale from 2026-07-30 are left as historical record of what informed that work, since neither reproduces the doc's content.
 * **Update**: Added C4-style Mermaid diagrams to `architecture.md` (Context, Container, Component — the Turbo Module specifically), after evaluating and declining a full Structurizr-DSL + Docker + CI + AI-diff-patcher pipeline the user brought over from a different project's spec. Kept the C4 framing and Mermaid (renders natively on GitHub, no tooling); the "living diagram" property comes from the same doc-updated-in-the-same-commit discipline already applied to the rest of `docs/`, not a separate pipeline. See decisions.md.
 
 ## 2026-07-30
