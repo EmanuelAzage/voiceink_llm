@@ -32,7 +32,9 @@ Native boundary — TranscriptionProvider Turbo Module
    └── Android: Kotlin · SpeechRecognizer
 ```
 
-The Turbo Module is the centerpiece: one TypeScript contract ([spec](docs/native-module-transcription.md)), two native implementations, streaming partial transcripts across the JSI boundary. Full architecture in [docs/architecture.md](docs/architecture.md).
+The Turbo Module is the centerpiece: one TypeScript contract ([spec](docs/native-module-transcription.md)), two native implementations, streaming partial transcripts across the JSI boundary.
+
+For the full picture — C4-style Context/Container/Component diagrams, state management, data model, and project structure — see [docs/architecture.md](docs/architecture.md).
 
 ## The knowledge base
 
